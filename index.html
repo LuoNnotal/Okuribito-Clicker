@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>キミは億り人になれるか？</title>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -19,8 +19,13 @@
     --font-disp:'DotGothic16', monospace;
     --font-num:'IBM Plex Mono', monospace;
   }
-  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
-  html,body{background:var(--bg); color:var(--text); font-family:var(--font-disp); font-size:15px;}
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none;}
+  html,body{
+    background:var(--bg); color:var(--text); font-family:var(--font-disp); font-size:15px;
+    touch-action:pan-y;                      /* 縦スクロールのみ許可(ピンチ・ダブルタップズーム無効) */
+    -webkit-user-select:none; user-select:none;  /* 長押しの選択・コピー・調べるメニューを抑止 */
+  }
+  #mText{-webkit-user-select:text; user-select:text;}  /* セーブコード欄だけ選択可 */
   body{max-width:760px; margin:0 auto; padding:0 10px 270px;}
 
   /* ══ ヘッダー(電光掲示板) ══ */
@@ -47,6 +52,7 @@
   .substats{display:flex; justify-content:space-between; font-size:12px; color:var(--dim); margin-top:4px; font-family:var(--font-num); gap:8px;}
   .substats span{white-space:nowrap;}
   .substats b{color:var(--text); font-weight:600;}
+  .substats b.pr-up{color:var(--up);} .substats b.pr-down{color:var(--down);} .substats b.pr-flat{color:var(--dim);}
   .substats .eye{color:var(--amber);}
   /* 現物買付可能額(左上・強調) */
   .buypower{
@@ -99,25 +105,56 @@
       repeating-linear-gradient(0deg, transparent 0 29px, rgba(255,255,255,.03) 29px 30px);
   }
   .pad-chart-wrap canvas{position:absolute; inset:0; width:100%; height:100%;}
-  /* 専用ボタンゾーン(左:売却 / 右:購入) */
+  /* 専用ボタンゾーン(左:売却=緑 / 右:購入=赤 で常時固定) */
   .pad-btn{
     width:92px; flex:none; cursor:pointer;
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
     font-family:var(--font-disp); letter-spacing:2px;
-    background:#111814; color:#9aa69f; border:none;
+    border:none;
   }
-  .pad-btn.sellzone{border-right:1px solid var(--line);}
-  .pad-btn.buyzone{border-left:1px solid var(--line);}
+  .pad-btn.sellzone{
+    border-right:1px solid var(--line);
+    background:#12241a; color:var(--down);
+    box-shadow:inset 0 0 0 1px rgba(53,208,127,.35);
+    text-shadow:0 0 8px rgba(53,208,127,.5);
+  }
+  .pad-btn.buyzone{
+    border-left:1px solid var(--line);
+    background:#2a1212; color:var(--up);
+    box-shadow:inset 0 0 0 1px rgba(255,90,90,.35);
+    text-shadow:0 0 8px rgba(255,90,90,.5);
+  }
   .pad-btn .pb-price{font-family:var(--font-num); font-weight:600; font-size:13px; letter-spacing:0;}
   .pad-btn .pb-label{font-size:12px;}
+  .pad-btn .pb-tag{font-size:9px; height:11px; line-height:11px; letter-spacing:1px;}  /* チャンス表示の予約枠(空でも高さ確保) */
   .pad-btn:active{filter:brightness(1.5);}
-  .pad-btn:disabled{opacity:.4; cursor:default;}
-  /* トレンドに応じたおすすめ側の強調(赤) */
-  .pad-btn.hot{
-    background:#2a1212; color:var(--up);
-    box-shadow:inset 0 0 0 2px var(--up);
-    text-shadow:0 0 8px rgba(255,90,90,.6);
+  .pad-btn:disabled{opacity:.35; cursor:default; filter:grayscale(.5);}
+  /* 利確チャンス:売却額>平均取得額のとき鮮明な緑でゆっくりフェード */
+  .pad-btn.sellzone.profit{
+    background:#194f31; color:#7dffb8;
+    box-shadow:inset 0 0 0 2px rgba(53,208,127,.9), 0 0 14px rgba(53,208,127,.5);
+    text-shadow:0 0 10px rgba(125,255,184,.9);
+    animation:profitFade 1.4s ease-in-out infinite;
   }
+  @keyframes profitFade{
+    0%,100%{filter:brightness(1.35);}
+    50%{filter:brightness(0.75);}
+  }
+  /* ナンピンチャンス:購入額<平均取得額のとき鮮明な赤で強調 */
+  .pad-btn.buyzone.dip{
+    background:#5c1616; color:#ff8a8a;
+    box-shadow:inset 0 0 0 2px rgba(255,90,90,.9), 0 0 14px rgba(255,90,90,.5);
+    text-shadow:0 0 10px rgba(255,138,138,.9);
+  }
+  /* 売買実行時のフロート表示(◯株購入/◯株売却) */
+  .pad-float{
+    position:absolute; pointer-events:none; z-index:6;
+    font-family:var(--font-num); font-weight:600; font-size:14px; white-space:nowrap;
+    animation:floatUp .9s ease-out forwards;
+    text-shadow:0 0 6px currentColor;
+  }
+  .pad-float.buy{color:var(--up);}
+  .pad-float.sell{color:var(--down);}
   .trade-hint{
     position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
     pointer-events:none; color:var(--dim); font-size:13px; gap:4px;
@@ -133,11 +170,14 @@
   .stock{
     display:grid; grid-template-columns:1fr auto; gap:2px 10px;
     padding:9px 12px; border-bottom:1px solid var(--line); align-items:center;
-    min-height:60px;                 /* 好材料バッジ等での高さ変化を防ぐ */
+    height:130px;                    /* メタ4行＋売買ボタンが切れない高さ。バッジ等での変化も防ぐ */
+    overflow:hidden;
   }
+  .st-badges{height:18px; line-height:16px; overflow:hidden; white-space:nowrap;}
   .stock:last-child{border-bottom:none;}
   .st-col{min-width:0;}              /* はみ出しを許容しレイアウトを固定 */
   .st-name{font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .st-name.held{color:var(--amber); text-shadow:0 0 6px rgba(255,179,0,.35);}  /* 保有中の銘柄名 */
   .st-code{color:var(--dim); font-size:11px; font-family:var(--font-num); margin-right:6px;}
   .st-sector{font-size:10px; color:var(--dim); border:1px solid var(--line); padding:0 4px; margin-left:6px;}
   .st-buff{font-size:10px; padding:0 4px; margin-left:4px;}
@@ -146,8 +186,15 @@
   .st-price{font-family:var(--font-num); font-size:14px; text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap;}
   .st-price .arrow{font-size:12px;}
   .pr-up{color:var(--up);} .pr-down{color:var(--down);} .pr-flat{color:var(--dim);}
-  .st-meta{font-size:11px; color:var(--dim); font-family:var(--font-num); display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+  .st-meta{
+    font-size:11px; color:var(--dim); font-family:var(--font-num);
+    display:flex; gap:8px; align-items:center;
+    white-space:nowrap; overflow:hidden;      /* バッジ等が出ても行送りしない */
+    height:17px; line-height:17px;
+  }
   .st-meta b{color:var(--text);}
+  .st-meta .st-signal{margin-left:auto; min-width:56px; text-align:right;}  /* 出現しても他が動かない予約枠 */
+  .sig-slot{height:12px; line-height:12px; font-size:10px; letter-spacing:1px; text-align:center;}  /* 売買ボタン上下の予約枠 */
   .st-right{display:flex; align-items:center; gap:8px; justify-content:flex-end;}
   .spark{width:84px; height:26px; image-rendering:pixelated;}
   .btn{
@@ -246,6 +293,7 @@
     letter-spacing:0;
   }
   .qty-btn:active{background:rgba(255,179,0,.15);}
+  .qty-btn.on{background:rgba(255,179,0,.22); color:#FFD24D;}
 
   /* ══ 汎用モーダル ══ */
   #mOverlay{
@@ -308,16 +356,17 @@
   <div class="buypower"><span class="bp-label">現物買付可能額</span><b id="cash">¥0</b></div>
   <div class="substats">
     <span>株式 <b id="equity" class="pr-flat">¥0</b></span>
-    <span>配当 <b id="dps">¥0</b>/秒</span>
+    <span>配当 <b id="dps">¥0</b>/10s</span>
   </div>
   <div class="substats">
     <span class="eye">相場眼 <b id="eyes">0</b>(+<span id="eyebonus">0</span>%)</span>
+    <span>実現損益 <b id="realized" class="pr-flat">¥0</b></span>
   </div>
   <div class="ticker"><div class="ticker-inner" id="ticker">【キミは億り人になれるか？】ようこそ、養分さん。デイトレで軍資金を稼ぎ、日経225全銘柄を1株から買い集めて配当長者を目指せ ─ 株価は架空のデフォルメ値です</div></div>
 </header>
 
 <section>
-  <div class="sec-head" id="boardHead"><span>■ 銘柄ボード</span><span class="r"><button class="qty-btn" id="boardQtyBtn">単位×1株</button> <span id="boardCount">日経225 / 解禁 10銘柄</span></span></div>
+  <div class="sec-head" id="boardHead"><span>■ 銘柄ボード</span><span class="r"><button class="qty-btn" id="ownedFilterBtn">保有のみ</button> <button class="qty-btn" id="boardQtyBtn">単位×100株</button> <span id="boardCount">日経225 / 解禁 10銘柄</span></span></div>
   <div id="board">
     <div class="folded-head" id="scrollUpHead" style="display:none;"></div>
     <div id="activeBody"></div>
@@ -346,21 +395,23 @@
 </footer>
 
 <div id="bottomBar">
-  <button id="upgTab"><span>■ 強化ショップを開く</span><span class="tab-r" id="upgTabCount">50項目 ▲</span></button>
+  <button id="upgTab"><span>■ 強化ショップを開く</span><span class="tab-r" id="upgTabCount">58項目 ▲</span></button>
   <section>
     <div class="sec-head" id="padHead" style="cursor:pointer;"><span>■ 日経225デイトレ <span id="padToggle" style="color:var(--amber);">▼閉じる</span></span><span class="r"><button class="qty-btn" id="padQtyBtn">×1株</button> <span id="nkVal">日経 ¥70,000</span> ／ <span id="zaraHold">保有 0株</span> ／ <span id="tapCount">自動OFF</span></span></div>
     <div class="trade-pad" id="pad">
       <button class="pad-btn sellzone" id="padSellBtn">
+        <span class="pb-tag" id="padSellTag"></span>
         <span class="pb-price" id="padSellPrice">¥0</span>
-        <span class="pb-label">売却</span>
+        <span class="pb-label" id="padSellLabel">売却 ×1</span>
       </button>
       <div class="pad-chart-wrap" id="padChartWrap">
         <canvas id="padChart"></canvas>
         <div class="trade-hint" id="padHint"></div>
       </div>
       <button class="pad-btn buyzone" id="padBuyBtn">
+        <span class="pb-tag" id="padBuyTag"></span>
         <span class="pb-price" id="padBuyPrice">¥0</span>
-        <span class="pb-label">購入</span>
+        <span class="pb-label" id="padBuyLabel">購入 ×1</span>
       </button>
     </div>
   </section>
@@ -384,7 +435,7 @@
 
 <div id="upgDrawer">
   <div class="drawer-head">
-    <span>■ 強化ショップ <span class="dh-r" id="upgOwnedCount">0/50 取得</span></span>
+    <span>■ 強化ショップ <span class="dh-r" id="upgOwnedCount">0/58 取得</span></span>
     <button id="upgClose">✕ 閉じる</button>
   </div>
   <div class="upg-summary" id="upgSummary"></div>
@@ -636,18 +687,27 @@ function toFull(s){
   return out;
 }
 function sig3(n){ const p=Math.pow(10, Math.max(0, Math.floor(Math.log10(n))-2)); return Math.round(n/p)*p; }
+// 銘柄ごとの固定疑似乱数(0〜1)。リロードしても同じ値になる
+function prand(i){ const x=Math.sin(i*127.1+311.7)*43758.5453; return x-Math.floor(x); }
 const STOCKS = RAW.map((r,i)=>{
   // トヨタ41兆に到達するバランス調整
   const growth = 1.115;
   const base = sig3(1000*Math.pow(growth, i));
-  return {code:r[0], name:r[1], disp:toFull(r[1]), sector:r[2], base:base, div:Math.max(1, sig3(base/60))};
+  // 配当利回り:株価の0.2〜6.0%(銘柄ごとに固定)
+  const yld = 0.002 + prand(i)*0.058;
+  // 高配当な銘柄ほど株価のボラが小さく、低配当ほど大きい(0.012〜0.067)
+  const vol = 0.012 + (1-(yld-0.002)/0.058)*0.055;
+  return {code:r[0], name:r[1], disp:toFull(r[1]), sector:r[2], base:base, yield:yld, vol:vol, div:Math.max(1, Math.round(base*yld))};
 });
 
 const INITIAL_VISIBLE = 10;   // 常に表示される銘柄数
 const VISIBLE_WINDOW  = 10;   // アクティブに表示する窓の幅
-const UNLOCK_STEP     = 3;    // 一番下を買うと解禁される数(=上で畳まれる数)
+const UNLOCK_STEP     = 1;    // 一番下を100株買うと解禁される数
 const SELL_RATE       = 1.0;  // 売却レート100%(評価額そのままで売れる)
 
+/* 強化ショップ(コスト昇順に並べること。？？？公開ロジックが順序に依存)
+   ─ atlot/atmarginは手動・自動売買の両方に効くため「デイトレの〜」表記に統一
+   ─ padbuy(購入金額の割引)/padsell(売却金額の上乗せ)は永続バフ */
 const UPGRADES = [
  {id:"u2",  name:"NISA口座開設",           cost:4e3,    desc:"配当 +12%",                             type:"div",      v:1.12},
  {id:"u5",  name:"配当再投資",             cost:6e4,    desc:"配当 +15%",                             type:"div",      v:1.15},
@@ -657,47 +717,55 @@ const UPGRADES = [
  {id:"u11", name:"株主優待の鬼",           cost:3e6,    desc:"配当 +18%",                             type:"div",      v:1.18},
  {id:"u1",  name:"自動売買システム起動",   cost:5e6,  desc:"日経225デイトレを自動化。トレンドに応じて毎秒、自動で売買を実行する",  type:"atunlock", v:1},
  {id:"u12", name:"マルチスレッド執行",     cost:6e6,    desc:"自動売買の実行回数 ×1.5",                type:"atspeed",  v:1.5},
- {id:"u3",  name:"自動売買ロット拡大",     cost:7.5e6,  desc:"自動売買の売買代金 ×1.4",                type:"atlot",    v:1.4},
+ {id:"u3",  name:"デイトレロット拡大",     cost:7.5e6,  desc:"デイトレの売買代金 ×1.4",                type:"atlot",    v:1.4},
  {id:"u4",  name:"並列売買ボット",         cost:1e7,    desc:"自動売買の実行回数 ×1.6",                type:"atspeed",  v:1.6},
+ {id:"pb1", name:"指値の心得",             cost:1.2e7,  desc:"デイトレの購入金額 -5%(永続)",           type:"padbuy",   v:0.95},
  {id:"u13", name:"増配サプライズ",         cost:1.5e7,    desc:"配当 +16%",                             type:"div",      v:1.16},
- {id:"u6",  name:"利ざや拡大アルゴ",       cost:2e7,    desc:"自動売買の売却益 ×1.4",                  type:"atmargin", v:1.4},
+ {id:"u6",  name:"利ざや拡大アルゴ",       cost:2e7,    desc:"デイトレの売却益 ×1.4",                  type:"atmargin", v:1.4},
+ {id:"ps1", name:"利確の美学",             cost:2.5e7,  desc:"デイトレの売却金額 +6%(永続)",           type:"padsell",  v:1.06},
  {id:"u14", name:"高速発注端末",           cost:3e7,    desc:"長押し連続売買の間隔を0.5秒→0.25秒に短縮",  type:"padspeed", v:2},
- {id:"u10", name:"大口ロット口座",         cost:4e7,    desc:"自動売買の売買代金 ×1.6",                type:"atlot",    v:1.6},
- {id:"u15", name:"スプレッド最適化AI",     cost:6e7,    desc:"自動売買の売却益 ×1.8",                  type:"atmargin", v:1.8},
+ {id:"u10", name:"大口ロット口座",         cost:4e7,    desc:"デイトレの売買代金 ×1.6",                type:"atlot",    v:1.6},
+ {id:"u15", name:"スプレッド最適化AI",     cost:6e7,    desc:"デイトレの売却益 ×1.8",                  type:"atmargin", v:1.8},
  {id:"u16", name:"機関投資家の情報網",     cost:1.5e8,    desc:"配当 +20%",                             type:"div",      v:1.20},
- {id:"u17", name:"先物ロールオーバー",     cost:3e8,    desc:"自動売買の売買代金 ×1.6",                type:"atlot",    v:1.6},
+ {id:"u17", name:"先物ロールオーバー",     cost:3e8,    desc:"デイトレの売買代金 ×1.6",                type:"atlot",    v:1.6},
+ {id:"pb2", name:"板読みの達人",           cost:5e8,    desc:"デイトレの購入金額 -7%(永続)",           type:"padbuy",   v:0.93},
  {id:"u18", name:"高配当ポートフォリオ",   cost:7.5e8,    desc:"配当 +22%",                             type:"div",      v:1.22},
+ {id:"ps2", name:"高値売り抜けの技",       cost:1e9,    desc:"デイトレの売却金額 +8%(永続)",           type:"padsell",  v:1.08},
  {id:"u19", name:"相場眼の覚醒",           cost:1.5e9,    desc:"相場眼ボーナスを +8%→+10%/個 に強化",   type:"eyeboost", v:0.10},
  {id:"u20", name:"コロケーションBot軍団",  cost:3e9,    desc:"自動売買の実行回数 ×1.8",                type:"atspeed",  v:1.8},
  {id:"u21", name:"日銀のお友達",           cost:7.5e9, desc:"配当 +25%",                             type:"div",      v:1.25},
- {id:"u22", name:"板の裏を読むAI",         cost:1.5e10,   desc:"自動売買の売却益 ×1.7",                  type:"atmargin", v:1.7},
+ {id:"u22", name:"板の裏を読むAI",         cost:1.5e10,   desc:"デイトレの売却益 ×1.7",                  type:"atmargin", v:1.7},
  {id:"u23", name:"政策保有株の解消",       cost:3e10,   desc:"配当 +26%",                             type:"div",      v:1.26},
  {id:"u24", name:"分散投資の妙",           cost:7.5e10, desc:"保有銘柄の種類×0.8%だけ配当UP",         type:"divsyn",   v:0.008},
- {id:"u25", name:"量子ロット拡張",         cost:1.5e11,   desc:"自動売買の売買代金 ×2.0",                type:"atlot",    v:2.0},
+ {id:"pb3", name:"ダークプール直結",       cost:1e11,   desc:"デイトレの購入金額 -9%(永続)",           type:"padbuy",   v:0.91},
+ {id:"u25", name:"量子ロット拡張",         cost:1.5e11,   desc:"デイトレの売買代金 ×2.0",                type:"atlot",    v:2.0},
+ {id:"ps3", name:"天井センサー",           cost:2e11,   desc:"デイトレの売却金額 +10%(永続)",          type:"padsell",  v:1.10},
  {id:"u26", name:"配当貴族戦略",           cost:3e11,   desc:"配当 +28%",                             type:"div",      v:1.28},
  {id:"u27", name:"光速執行エンジン",       cost:7.5e11, desc:"自動売買の実行回数 ×1.8",                type:"atspeed",  v:1.8},
  {id:"u28", name:"為替ヘッジ完備",         cost:1.5e12,   desc:"配当 +28%",                             type:"div",      v:1.28},
- {id:"u29", name:"完全ヘッジ理論",         cost:3e12,   desc:"自動売買の売却益 ×2.0",                  type:"atmargin", v:2.0},
+ {id:"u29", name:"完全ヘッジ理論",         cost:3e12,   desc:"デイトレの売却益 ×2.0",                  type:"atmargin", v:2.0},
  {id:"u30", name:"グローバルマクロ",       cost:7.5e12, desc:"配当 +30%",                             type:"div",      v:1.30},
- {id:"u31", name:"無限与信枠",             cost:1.5e13,   desc:"自動売買の売買代金 ×2.0",                type:"atlot",    v:2.0},
+ {id:"u31", name:"無限与信枠",             cost:1.5e13,   desc:"デイトレの売買代金 ×2.0",                type:"atlot",    v:2.0},
  {id:"u32", name:"大底ハンター",           cost:3e13,   desc:"割安銘柄の配当を ×1.5 に強化",          type:"contra",   v:1.5},
  {id:"u33", name:"ソブリンファンド化",     cost:7.5e13, desc:"配当 +32%",                             type:"div",      v:1.32},
  {id:"u34", name:"全自動ファンド軍団",     cost:1.5e14,   desc:"自動売買の実行回数 ×2.2",                type:"atspeed",  v:2.2},
  {id:"u35", name:"配当王への道",           cost:3e14,   desc:"配当 +32%",                             type:"div",      v:1.32},
- {id:"u36", name:"摩擦ゼロ執行",           cost:7.5e14, desc:"自動売買の売却益 ×2.2",                  type:"atmargin", v:2.2},
+ {id:"u36", name:"摩擦ゼロ執行",           cost:7.5e14, desc:"デイトレの売却益 ×2.2",                  type:"atmargin", v:2.2},
+ {id:"pb4", name:"神の指値",               cost:1e15,   desc:"デイトレの購入金額 -12%(永続)",          type:"padbuy",   v:0.88},
  {id:"u37", name:"順張りモメンタム",       cost:1.5e15,   desc:"割高銘柄の配当を ×1.4 に強化",          type:"trend",    v:1.4},
+ {id:"ps4", name:"伝説の売り抜け",         cost:2e15,   desc:"デイトレの売却金額 +12%(永続)",          type:"padsell",  v:1.12},
  {id:"u38", name:"資本の錬金術",           cost:3e15,   desc:"配当 +35%",                             type:"div",      v:1.35},
- {id:"u39", name:"特異点ロット",           cost:7.5e15, desc:"自動売買の売買代金 ×2.2",                type:"atlot",    v:2.2},
+ {id:"u39", name:"特異点ロット",           cost:7.5e15, desc:"デイトレの売買代金 ×2.2",                type:"atlot",    v:2.2},
  {id:"u40", name:"神の板",                 cost:1.5e16,   desc:"自動売買の実行回数 ×2.4",                type:"atspeed",  v:2.4},
  {id:"u41", name:"兆万長者の配当網",       cost:3e16,   desc:"配当 +40%",                             type:"div",      v:1.40},
  {id:"u42", name:"千里眼",                 cost:7.5e16, desc:"相場眼ボーナスを +10%→+14%/個 に強化",  type:"eyeboost", v:0.14},
  {id:"u43", name:"無限配当エンジン",       cost:3e17,   desc:"配当 +45%",                             type:"div",      v:1.45},
- {id:"u44", name:"全知の執行系",           cost:7.5e17, desc:"自動売買の売却益 ×2.6",                  type:"atmargin", v:2.6},
- {id:"u45", name:"万能AIディーラー",       cost:3e18,   desc:"自動売買の売買代金 ×2.5",                type:"atlot",    v:2.5},
+ {id:"u44", name:"全知の執行系",           cost:7.5e17, desc:"デイトレの売却益 ×2.6",                  type:"atmargin", v:2.6},
+ {id:"u45", name:"万能AIディーラー",       cost:3e18,   desc:"デイトレの売買代金 ×2.5",                type:"atlot",    v:2.5},
  {id:"u46", name:"中央銀行を掌握",         cost:7.5e18, desc:"配当 +50%",                             type:"div",      v:1.50},
  {id:"u47", name:"時間を買う",             cost:3e19,   desc:"自動売買の実行回数 ×3.0",                type:"atspeed",  v:3.0},
  {id:"u48", name:"世界経済の支配",         cost:7.5e19, desc:"配当 +55%",                             type:"div",      v:1.55},
- {id:"u49", name:"惑星規模の演算",         cost:3e20,   desc:"自動売買の売却益 ×3.0",                  type:"atmargin", v:3.0},
+ {id:"u49", name:"惑星規模の演算",         cost:3e20,   desc:"デイトレの売却益 ×3.0",                  type:"atmargin", v:3.0},
  {id:"u50", name:"兜町の神",               cost:7.5e20, desc:"配当 +60%",                             type:"div",      v:1.60},
 ];
 
@@ -734,9 +802,10 @@ const NEWS = [
 let S = newState();
 function newState(){
   return {
-    money:500000, lifetime:0, taps:0,
+    money:1000000, lifetime:0, taps:0,
     zaraStock:0,  // ザラ場デイトレ用の株数
     zaraAvg:0,    // 日経225デイトレの平均取得単価
+    realized:0,   // 実現損益(売却額−平均取得単価の累計)
     eyes:0, prestiges:0,
     unlocked:INITIAL_VISIBLE,         // 解禁済み銘柄数(永続・減らない)
     owned:STOCKS.map(()=>0),          // 保有株数(1株単位)
@@ -746,6 +815,7 @@ function newState(){
     buff:STOCKS.map(()=>({until:0, rate:1})),
     earnings:STOCKS.map(()=>({quarter:"1Q", earnUntil:0, divMult:1.0, badgeUntil:0, badge:""})),
     sellBoost:STOCKS.map(()=>1.1),  // 売却による配当ブースト（初期1.1、売却するたびに低下）
+    divNext:STOCKS.map(()=>0),      // 次回配当の支払時刻(購入から10秒サイクル)
     upg:{},
     upgReveal:0,                      // ？？？強化の公開数
     shareUnits:true,                  // 保有数が1株単位であるフラグ(旧セーブ移行用)
@@ -762,8 +832,11 @@ function fixState(){
   while(S.sellBoost.length<n) S.sellBoost.push(1.1);
   if(!S.avgCost) S.avgCost=STOCKS.map(()=>0);
   while(S.avgCost.length<n) S.avgCost.push(0);
-  S.owned.length=n; S.mult.length=n; S.hist.length=n; S.buff.length=n; S.earnings.length=n; S.sellBoost.length=n; S.avgCost.length=n;
+  if(!S.divNext) S.divNext=STOCKS.map(()=>0);
+  while(S.divNext.length<n) S.divNext.push(0);
+  S.owned.length=n; S.mult.length=n; S.hist.length=n; S.buff.length=n; S.earnings.length=n; S.sellBoost.length=n; S.avgCost.length=n; S.divNext.length=n;
   if(S.zaraAvg===undefined) S.zaraAvg=0;
+  if(S.realized===undefined) S.realized=0;
   if(S.upgReveal===undefined) S.upgReveal=0;
   // 旧セーブ(100株ロット単位)を1株単位に移行
   if(!S.shareUnits){
@@ -772,7 +845,7 @@ function fixState(){
   }
   if(!S.unlocked || S.unlocked<INITIAL_VISIBLE){
     let v=INITIAL_VISIBLE;
-    while(v<n && S.owned[v-1]>0) v=Math.min(n, v+UNLOCK_STEP);
+    while(v<n && S.owned[v-1]>=100) v=Math.min(n, v+UNLOCK_STEP);
     S.unlocked=v;
   }
 }
@@ -798,8 +871,8 @@ function divMultGlobal(){
 }
 function stockDps(i){
   if(!S.owned[i]) return 0;
-  // divは100株あたりの配当値。ownedは1株単位なので/100する
-  let d = STOCKS[i].div * (S.owned[i]/100) * divMultGlobal();
+  // 配当は1株あたりdiv。表示・支払いとも10秒あたりの額
+  let d = STOCKS[i].div * S.owned[i] * divMultGlobal();
   const b=S.buff[i]; if(Date.now()<b.until) d*=b.rate;
   // 決算による配当変動を適用（永続的）
   d*=S.earnings[i].divMult;
@@ -815,6 +888,9 @@ function autoTradeUnlocked(){ return hasType("atunlock"); }
 function atLotMult(){ let m=1; for(const u of UPGRADES) if(S.upg[u.id] && u.type==="atlot") m*=scaleBoost(u.v); return m; }
 function atSpeedMult(){ let m=1; for(const u of UPGRADES) if(S.upg[u.id] && u.type==="atspeed") m*=scaleBoost(u.v); return m; }
 function atMarginMult(){ let m=1; for(const u of UPGRADES) if(S.upg[u.id] && u.type==="atmargin") m*=scaleBoost(u.v); return m; }
+// デイトレ購入割引(padbuy)・売却上乗せ(padsell)。descの%をそのまま適用
+function padBuyDisc(){ let m=1; for(const u of UPGRADES) if(S.upg[u.id] && u.type==="padbuy") m*=u.v; return m; }
+function padSellUp(){ let m=1; for(const u of UPGRADES) if(S.upg[u.id] && u.type==="padsell") m*=u.v; return m; }
 // 株価(1株あたりの時価)。買値と売値は同一
 function stockPrice(i){ return STOCKS[i].base * S.mult[i]; }
 function buyCost(i){ return stockPrice(i); }
@@ -823,7 +899,12 @@ function sellGain(i){ return stockPrice(i); }
 function stockEquity(i){
   return S.owned[i] * stockPrice(i);
 }
-function totalEquity(){ let t=0; for(let i=0;i<STOCKS.length;i++) t+=stockEquity(i); return t; }
+function totalEquity(){
+  let t=0; for(let i=0;i<STOCKS.length;i++) t+=stockEquity(i);
+  // 日経225デイトレの保有株も株式評価額に含める(nikkeiは後続ブロックで定義されるためガード)
+  if(typeof nikkei==="number") t+=S.zaraStock*nikkei;
+  return t;
+}
 function prestigeGain(){ return Math.max(0, Math.floor(Math.sqrt(S.lifetime/1e8)) - 0); }
 
 /* ════════════════════════ 表示ユーティリティ ════════════════════════ */
@@ -845,7 +926,7 @@ function fmtP(n){
   return n.toLocaleString();
 }
 const yenP = n=>"¥"+fmtP(n);
-// 略さずカンマ区切りで表示(総資産・現物買付可能額用)
+// 略さずカンマ区切りで表示(総資産・現物買付可能額・デイトレ平均取得額用)
 const yenFull = n=>"¥"+Math.floor(n).toLocaleString("en-US");
 
 function log(msg, hi){
@@ -882,13 +963,20 @@ function createRow(i, flash){
   row.className="stock"+(flash?" unlock-flash":"");
   row.innerHTML=`
     <div class="st-col">
-      <div class="st-name"><span class="st-code">${st.code}</span>${st.disp}<span class="st-sector">${st.sector}</span><span class="st-buff" data-buff></span></div>
+      <div class="st-name"><span class="st-code">${st.code}</span>${st.disp}<span class="st-sector">${st.sector}</span></div>
+      <div class="st-badges"><span class="st-buff" data-buff></span></div>
       <div class="st-meta">
+        <span>利回り${(st.yield*100).toFixed(1)}%</span>
         <span>保有 <b data-own>0</b>株</span>
+      </div>
+      <div class="st-meta">
         <span>平均 <b data-avg>─</b></span>
-        <span>配当 <b data-div>¥0</b>/s</span>
-        <span style="color:var(--dim)">(予想+<span data-divest>¥0</span>/s)</span>
-        <span class="st-signal" data-sig></span>
+      </div>
+      <div class="st-meta">
+        <span>配当 <b data-div>¥0</b>/10s</span>
+      </div>
+      <div class="st-meta">
+        <span style="color:var(--dim)">(予想+<span data-divest>¥0</span>/10s)</span>
       </div>
     </div>
     <div class="st-right">
@@ -896,9 +984,11 @@ function createRow(i, flash){
         <div class="st-price" data-price></div>
         <canvas class="spark" width="84" height="26"></canvas>
       </div>
-      <div style="display:flex;flex-direction:column;gap:4px;">
+      <div style="display:flex;flex-direction:column;gap:3px;">
+        <div class="st-signal sig-slot" data-sigbuy></div>
         <button class="btn" data-buy>買</button>
         <button class="btn sell" data-sell>売</button>
+        <div class="st-signal sig-slot" data-sigsell></div>
       </div>
     </div>`;
   row.querySelector("[data-buy]").onclick=()=>buy(i);
@@ -907,20 +997,43 @@ function createRow(i, flash){
   return row;
 }
 
-// 行の配置(解禁・スクロール変更時のみ)
-let winStartCur=0, winEndCur=0;   // 現在表示中の窓(renderBoardが参照)
+// 行の配置(解禁・スクロール・フィルタ変更時のみ)
+let displayedIdx=[];              // 現在表示中の銘柄インデックス(renderBoardが参照)
+let ownedFilter=false;            // 保有銘柄のみ表示モード
+document.getElementById("ownedFilterBtn").onclick=()=>{
+  ownedFilter=!ownedFilter;
+  const b=document.getElementById("ownedFilterBtn");
+  b.textContent=ownedFilter?"全銘柄":"保有のみ";
+  b.classList.toggle("on", ownedFilter);
+  layoutBoard();
+  renderBoard();
+};
 function layoutBoard(){
   const revealed=revealedCount();
+  for(let i=0;i<revealed;i++) if(!rowEls[i]) rowEls[i]=createRow(i, i>=INITIAL_VISIBLE);
+  activeBody.innerHTML="";
+  displayedIdx=[];
+
+  if(ownedFilter){
+    /* ── 保有銘柄のみ表示 ── */
+    for(let i=0;i<revealed;i++) if(S.owned[i]>0) displayedIdx.push(i);
+    for(const i of displayedIdx) activeBody.appendChild(rowEls[i]);
+    scrollUpHead.style.display="none";
+    scrollDownHead.style.display="none";
+    unlockHint.style.display="";
+    unlockHint.innerHTML = displayedIdx.length>0
+      ? `保有中 ${displayedIdx.length}銘柄を表示中 ─ 「全銘柄」で通常表示に戻る`
+      : `保有銘柄はありません ─ 「全銘柄」で通常表示に戻る`;
+    document.getElementById("boardCount").textContent=`保有 ${displayedIdx.length}銘柄`;
+    return;
+  }
+
+  /* ── 通常(巻き物スクロール)表示 ── */
   const baseStart=Math.max(0, revealed-VISIBLE_WINDOW);  // 最新窓の開始位置
   scrollBack=Math.max(0, Math.min(scrollBack, baseStart));
   const winStart=baseStart-scrollBack;                   // 巻き物式にスライドする窓
   const winEnd=Math.min(revealed, winStart+VISIBLE_WINDOW); // 表示は常に10銘柄
-  winStartCur=winStart; winEndCur=winEnd;
-  
-  for(let i=0;i<revealed;i++) if(!rowEls[i]) rowEls[i]=createRow(i, i>=INITIAL_VISIBLE);
-  
-  activeBody.innerHTML="";
-  for(let i=winStart;i<winEnd;i++) activeBody.appendChild(rowEls[i]);
+  for(let i=winStart;i<winEnd;i++){ displayedIdx.push(i); activeBody.appendChild(rowEls[i]); }
 
   // 上バー:上に格納された銘柄がある時
   if(winStart>0){
@@ -941,7 +1054,7 @@ function layoutBoard(){
   if(revealed<STOCKS.length){
     const next=STOCKS[revealed-1];
     unlockHint.style.display="";
-    unlockHint.innerHTML=`▼ <b>${next.disp}</b> を1株購入すると次の${Math.min(UNLOCK_STEP,STOCKS.length-revealed)}銘柄が上場(残り ${STOCKS.length-revealed} 銘柄)`;
+    unlockHint.innerHTML=`▼ <b>${next.disp}</b> を100株購入すると次の銘柄が上場(残り ${STOCKS.length-revealed} 銘柄)`;
   } else {
     unlockHint.style.display="";
     unlockHint.innerHTML=`日経225 全銘柄が上場済み ─ 兜町のすべてが、あなたの盤上にある`;
@@ -952,7 +1065,7 @@ function layoutBoard(){
 // 行の値更新(表示中の行だけ)
 function renderBoard(){
   const now=Date.now();
-  for(let i=winStartCur;i<winEndCur;i++){
+  for(const i of displayedIdx){
     const r=rowEls[i]; if(!r) continue;
     updateRow(i, r, now);
   }
@@ -970,16 +1083,17 @@ function updateRow(i, r, now){
   priceEl.innerHTML=`<span class="arrow">${arrow}</span> ${yen(price)} <span style="font-size:11px">(${pct>=0?"+":""}${pct}%)</span>`;
 
   r.querySelector("[data-own]").textContent=fmt(S.owned[i]);
+  r.querySelector(".st-name").classList.toggle("held", S.owned[i]>0);  // 保有中は銘柄名の色を変える
   r.querySelector("[data-avg]").textContent = S.owned[i]>0 ? yen(S.avgCost[i]) : "─";
   r.querySelector("[data-div]").textContent=yen(stockDps(i));
-  // 予想配当:選択中の単位で今買った場合に増える配当/秒
+  // 予想配当:選択中の単位で今買った場合に増える配当/10秒
   const bq=boardBuyQty(i);
-  r.querySelector("[data-divest]").textContent=yen(STOCKS[i].div*(bq/100)*divMultGlobal());
+  r.querySelector("[data-divest]").textContent=yen(STOCKS[i].div*bq*divMultGlobal());
 
-  const sig=r.querySelector("[data-sig]");
-  if(S.mult[i]<=0.85){sig.textContent="◎買い場"; sig.className="st-signal sig-buy";}
-  else if(S.mult[i]>=1.25){sig.textContent="◎売り時"; sig.className="st-signal sig-sell";}
-  else {sig.textContent=""; sig.className="st-signal";}
+  const sigB=r.querySelector("[data-sigbuy]"), sigS=r.querySelector("[data-sigsell]");
+  if(S.mult[i]<=0.85){sigB.textContent="◎買い場"; sigB.className="st-signal sig-slot sig-buy"; sigS.textContent=""; sigS.className="st-signal sig-slot";}
+  else if(S.mult[i]>=1.25){sigS.textContent="◎売り時"; sigS.className="st-signal sig-slot sig-sell"; sigB.textContent=""; sigB.className="st-signal sig-slot";}
+  else {sigB.textContent=""; sigB.className="st-signal sig-slot"; sigS.textContent=""; sigS.className="st-signal sig-slot";}
 
   const bf=r.querySelector("[data-buff]");
   const b=S.buff[i];
@@ -1061,10 +1175,10 @@ function renderUpgs(){
     d.querySelector(".upg-desc").textContent = hidden ? "？？？" : u.desc;
     d.querySelector(".upg-cost").textContent = bought ? "取得済" : hidden ? "？？？" : yen(u.cost);
   });
-  document.getElementById("upgOwnedCount").textContent=`${owned}/50 取得`;
+  document.getElementById("upgOwnedCount").textContent=`${owned}/${UPGRADES.length} 取得`;
   // タブに「購入可能◯件」を表示して気づけるように
   const tc=document.getElementById("upgTabCount");
-  tc.textContent = affordable>0 ? `購入可 ${affordable}件 ▲` : `${50-owned}項目 ▲`;
+  tc.textContent = affordable>0 ? `購入可 ${affordable}件 ▲` : `${UPGRADES.length-owned}項目 ▲`;
   document.getElementById("upgTab").classList.toggle("ready", affordable>0);
   // 取得済み強化の合計ブースト値
   let divM=1;
@@ -1074,6 +1188,7 @@ function renderUpgs(){
   document.getElementById("upgSummary").innerHTML =
     `取得ブースト合計 ─ 配当<b>×${divM.toFixed(2)}</b> ／ `+
     `売買代金<b>×${atLotMult().toFixed(2)}</b> ／ 実行回数<b>×${atSpeedMult().toFixed(2)}</b> ／ 売却益<b>×${atMarginMult().toFixed(2)}</b> ／ `+
+    `購入割引<b>×${padBuyDisc().toFixed(2)}</b> ／ 売却上乗せ<b>×${padSellUp().toFixed(2)}</b> ／ `+
     `逆張り<b>×${scaleBoost(Math.max(1,bestOf("contra"))).toFixed(2)}</b> ／ 順張り<b>×${scaleBoost(Math.max(1,bestOf("trend"))).toFixed(2)}</b> ／ `+
     `相場眼<b>+${eyeRate}%</b>/個 ／ 連続売買<b>${hasType("padspeed")?"0.25":"0.5"}秒</b>間隔`;
 }
@@ -1091,7 +1206,7 @@ document.getElementById("upgClose").addEventListener("click", closeUpg);
 document.getElementById("upgOverlay").addEventListener("click", closeUpg);
 
 /* ════════════════════════ 売買 ════════════════════════ */
-let boardQty=1;  // 銘柄ボードの売買単位(1/10/100株/"all"=全売買)
+let boardQty=100;  // 銘柄ボードの売買単位(1/10/100株/"all"=全売買)。デフォルトは日本株の単元に合わせ100株
 function boardBuyQty(i){ return boardQty==="all" ? Math.floor(S.money/buyCost(i)) : boardQty; }
 function boardSellQty(i){ return boardQty==="all" ? S.owned[i] : (S.owned[i]>0 ? Math.min(boardQty,S.owned[i]) : boardQty); }
 document.getElementById("boardQtyBtn").onclick=()=>{
@@ -1107,12 +1222,13 @@ function buy(i){
   S.money-=c;
   // 平均取得単価を更新
   S.avgCost[i] = (S.avgCost[i]*S.owned[i] + c) / (S.owned[i]+q);
+  if(S.owned[i]===0) S.divNext[i]=Date.now()+10000;  // 購入タイミングから10秒カウント開始
   S.owned[i]+=q;
   const rev=revealedCount();
-  if(i===rev-1 && rev<STOCKS.length){
+  if(i===rev-1 && S.owned[i]>=100 && rev<STOCKS.length){
     S.unlocked=Math.min(STOCKS.length, rev+UNLOCK_STEP);
     layoutBoard();
-    log(`新規上場! ${STOCKS[rev].disp} など${Math.min(UNLOCK_STEP,STOCKS.length-rev)}銘柄が解禁`, true);
+    log(`新規上場! ${STOCKS[rev].disp} が解禁`, true);
   }
   renderAll();
 }
@@ -1120,8 +1236,13 @@ function sell(i){
   if(S.owned[i]<1) return;
   const q=boardSellQty(i);
   const g=sellGain(i)*q;
+  S.realized += (sellGain(i) - S.avgCost[i]) * q;   // 実現損益を記録
   S.owned[i]-=q; S.money+=g;
-  if(S.owned[i]<1) S.avgCost[i]=0;
+  if(S.owned[i]<1){
+    S.avgCost[i]=0;
+    S.divNext[i]=0;
+    if(ownedFilter) layoutBoard();   // 保有のみ表示中は全売却した行を除去
+  }
   // 売却するたびに配当ブースト率を低下させる（1.1→1.089...）
   S.sellBoost[i] = Math.max(1.0, S.sellBoost[i]*0.99);
   renderAll();
@@ -1170,13 +1291,13 @@ function padDowntrend(){
   const n=padCandles.length;
   return n>=1 ? padCandles[n-1].c < padCandles[n-1].o : false;
 }
-// 売買価格:常に日経平均と同額(トレンドによらず1/1)
-// (ロット拡大・利ざや拡大の強化で増幅)
+// 売買価格(1株あたり):日経平均を基準に、ロット拡大・売却益強化・
+// 購入割引(padbuy)・売却上乗せ(padsell)を反映
 function padPrices(){
   const base = nikkei;
   return {
-    buy:  base*atLotMult(),
-    sell: base*atLotMult()*atMarginMult(),
+    buy:  base*atLotMult()*padBuyDisc(),
+    sell: base*atLotMult()*atMarginMult()*padSellUp(),
   };
 }
 /* デイトレの売買単位(1/10/100株/"all"=全売買) */
@@ -1188,6 +1309,20 @@ document.getElementById("padQtyBtn").onclick=()=>{
   document.getElementById("padQtyBtn").textContent = padQty==="all" ? "全売買" : `×${padQty}株`;
   updatePadBtns();
 };
+/* 売買実行のフロート表示(◯株購入/◯株売却)。手動・長押し・自動売買で共通 */
+function padFloat(txt, side){
+  if(padCollapsed) return;
+  const el=document.createElement("div");
+  el.className="pad-float "+side;
+  el.textContent=txt;
+  const w=pad.clientWidth||320;
+  // 売却=左ボタン付近 / 購入=右ボタン付近のチャート上に出す
+  const x = side==="buy" ? (w-92-92) : (92+16);
+  el.style.left=(x+Math.random()*34)+"px";
+  el.style.top=(24+Math.random()*24)+"px";
+  pad.appendChild(el);
+  setTimeout(()=>el.remove(), 950);
+}
 /* 売買処理(手動＋自動売買で共用) */
 function padDoBuy(q, silent){
   if(q<1) return false;
@@ -1205,6 +1340,7 @@ function padDoSell(q, silent){
   if(q<1) return false;
   const {sell}=padPrices();
   const gain=sell*q;
+  S.realized += (sell - S.zaraAvg) * q;   // 実現損益を記録
   S.money+=gain; S.zaraStock-=q;
   if(S.zaraStock<1) S.zaraAvg=0;
   if(!silent) log(`日経225株売却: ¥${Math.floor(gain).toLocaleString()} (残株: ${S.zaraStock})`, true);
@@ -1225,27 +1361,46 @@ function bindHold(btn, fn){
   btn.addEventListener("pointerdown", start);
   ["pointerup","pointerleave","pointercancel"].forEach(ev=>btn.addEventListener(ev, stop));
   btn.addEventListener("contextmenu", e=>e.preventDefault());
+  // 長押しでOSのコピー/調べる/翻訳メニューが出るのを抑止
+  btn.addEventListener("touchstart", e=>e.preventDefault(), {passive:false});
 }
-bindHold(padSellBtn, ()=>padDoSell(padSellQtyVal(), false));
-bindHold(padBuyBtn,  ()=>padDoBuy(padBuyQtyVal(), false));
-// ボタンの価格・強調・活性状態を更新
-// (例外:日経平均と売買ボタンの金額は略さずフル表示)
+bindHold(padSellBtn, ()=>{
+  const q=Math.min(padSellQtyVal(), S.zaraStock);
+  if(!padDoSell(q, false)) return false;
+  padFloat(`${fmt(q)}株売却`, "sell");
+  return true;
+});
+bindHold(padBuyBtn, ()=>{
+  const q=padBuyQtyVal();
+  if(!padDoBuy(q, false)) return false;
+  padFloat(`${fmt(q)}株購入`, "buy");
+  return true;
+});
+// ボタンの価格・活性状態を更新
+// 表示金額は1株あたりの単価(日経225ベース)をフル桁で示し、単位は×Nで併記する
 function setPadPrice(el, n){
   const s="¥"+Math.floor(n).toLocaleString("en-US");
   el.textContent=s;
   el.style.fontSize=(s.length>11 ? Math.max(9, Math.round(13*11/s.length)) : 13)+"px";
 }
 function updatePadBtns(){
-  const down=padDowntrend();
   const {buy,sell}=padPrices();
-  const bq=Math.max(1,padBuyQtyVal()), sq=Math.max(1,padSellQtyVal());
-  setPadPrice(document.getElementById("padSellPrice"), sell*Math.max(1,Math.min(sq,S.zaraStock||1)));
-  setPadPrice(document.getElementById("padBuyPrice"), buy*bq);
+  setPadPrice(document.getElementById("padSellPrice"), sell);
+  setPadPrice(document.getElementById("padBuyPrice"), buy);
+  const qLabel = padQty==="all" ? "×全" : `×${padQty}`;
+  document.getElementById("padSellLabel").textContent=`売却 ${qLabel}`;
+  document.getElementById("padBuyLabel").textContent=`購入 ${qLabel}`;
   document.getElementById("nkVal").textContent="日経 ¥"+Math.floor(nikkei).toLocaleString("en-US");
-  padSellBtn.classList.toggle("hot", !down);  // 上昇トレンド=売り時
-  padBuyBtn.classList.toggle("hot", down);    // 下降トレンド=買い場
   padSellBtn.disabled = S.zaraStock<1;
   padBuyBtn.disabled = padBuyQtyVal()<1 || S.money<buy*padBuyQtyVal();
+  // 利確チャンス:保有ありかつ売却額が平均取得額を上回っている間、売却ボタンをフェード強調
+  const profitOn = S.zaraStock>=1 && S.zaraAvg>0 && sell>S.zaraAvg;
+  padSellBtn.classList.toggle("profit", profitOn);
+  document.getElementById("padSellTag").textContent = profitOn ? "利確チャンス" : "";
+  // ナンピンチャンス:保有ありかつ購入額が平均取得額を下回る(=買えば平均が下がる)間、購入ボタンを強調
+  const dipOn = !padBuyBtn.disabled && S.zaraStock>=1 && S.zaraAvg>0 && buy<S.zaraAvg;
+  padBuyBtn.classList.toggle("dip", dipOn);
+  document.getElementById("padBuyTag").textContent = dipOn ? "ナンピンチャンス" : "";
 }
 function drawPad(){
   if(padCollapsed) return;
@@ -1348,7 +1503,7 @@ function drawPad(){
 function tickMarket(){
   for(let i=0;i<STOCKS.length;i++){
     let m=S.mult[i];
-    m *= 1 + (Math.random()*2-1)*0.035;   // ボラティリティ
+    m *= 1 + (Math.random()*2-1)*STOCKS[i].vol;   // 銘柄ごとのボラティリティ
     m += (1-m)*0.02;                       // 平均回帰
     m = Math.min(1.8, Math.max(0.55, m));
     S.mult[i]=m;
@@ -1440,6 +1595,9 @@ document.getElementById("prestigeBtn").onclick=()=>{
 };
 function resetBoardDOM(){
   rowEls.length=0; scrollBack=0;
+  ownedFilter=false;
+  const fb=document.getElementById("ownedFilterBtn");
+  fb.textContent="保有のみ"; fb.classList.remove("on");
   activeBody.innerHTML="";
   layoutBoard();
 }
@@ -1570,8 +1728,14 @@ function renderHeader(){
   const eyeRate=Math.round(Math.max(0.08, bestOf("eyeboost"))*100);
   document.getElementById("eyes").textContent=S.eyes;
   document.getElementById("eyebonus").textContent=S.eyes*eyeRate;
+  // 実現損益(利益=赤/損失=緑の日本式)
+  const rp=S.realized||0;
+  const rpEl=document.getElementById("realized");
+  rpEl.className = rp>0.5 ? "pr-up" : rp<-0.5 ? "pr-down" : "pr-flat";
+  rpEl.textContent = (rp>0.5?"+":rp<-0.5?"-":"") + yen(Math.abs(rp));
+  // 平均取得額は略さずフル桁表示
   document.getElementById("zaraHold").textContent = S.zaraStock>0
-    ? `保有 ${fmt(S.zaraStock)}株(平均¥${fmt(S.zaraAvg)})`
+    ? `保有 ${fmt(S.zaraStock)}株(平均${yenFull(S.zaraAvg)})`
     : "保有 0株";
   document.getElementById("tapCount").textContent = autoTradeUnlocked()
     ? `自動×${Math.max(1,Math.round(atSpeedMult()))}/秒`
@@ -1591,9 +1755,25 @@ function renderAll(){ renderHeader(); renderBoard(); renderUpgs(); updatePadBtns
 /* 固定下部バーの高さ分だけ本文の下余白を確保(内容が隠れないように) */
 function fitBottomBar(){
   const bar=document.getElementById("bottomBar");
-  document.body.style.paddingBottom=(bar.offsetHeight+10)+"px";
+  document.body.style.paddingBottom=(bar.offsetHeight+24)+"px";
   drawPad();
 }
+// フォント読込やバーの高さ変化で余白がズレると、フッターのボタンが
+// 固定バーの下に隠れてタップできなくなるため、変化を監視して常に追従させる
+if(window.ResizeObserver){
+  new ResizeObserver(fitBottomBar).observe(document.getElementById("bottomBar"));
+}
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(fitBottomBar);
+window.addEventListener("load", fitBottomBar);
+window.addEventListener("orientationchange", ()=>setTimeout(fitBottomBar,150));
+
+/* ピンチイン・ピンチアウトの無効化 */
+["gesturestart","gesturechange","gestureend"].forEach(ev=>
+  document.addEventListener(ev, e=>e.preventDefault(), {passive:false}));
+document.addEventListener("touchmove", e=>{ if(e.touches.length>1) e.preventDefault(); }, {passive:false});
+document.addEventListener("contextmenu", e=>{
+  if(e.target.id!=="mText") e.preventDefault();   // セーブコード欄以外は長押しメニュー禁止
+});
 
 /* ════════════════════════ メインループ ════════════════════════ */
 const loaded=autoLoad();   // 自動セーブがあれば復元
@@ -1608,16 +1788,32 @@ window.addEventListener("beforeunload", autoSave);
 document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="hidden") autoSave(); });
 
 setInterval(()=>{           // 1秒ティック:配当・自動売買
-  gain(totalDps());
+  // 配当:銘柄ごとに購入時刻を起点とした10秒サイクルで、表示額(/10s)をそのまま支払う
+  const now=Date.now();
+  for(let i=0;i<STOCKS.length;i++){
+    if(!S.owned[i]) continue;
+    if(!S.divNext[i]) S.divNext[i]=now+10000;
+    let guard=0;
+    while(now>=S.divNext[i] && guard<2880){   // 離席分もまとめて精算(最大8時間)
+      gain(stockDps(i));
+      S.divNext[i]+=10000;
+      guard++;
+    }
+    if(guard>=2880) S.divNext[i]=now+10000;
+  }
   
   // 自動売買機能：強化ショップで「自動売買システム起動」を取得するまでオフ
   if(autoTradeUnlocked()){
     const isDowntrend = padDowntrend();
     const rounds = Math.max(1, Math.round(atSpeedMult()));  // 実行回数(並列売買ボット等で増加)
+    let done=0;
     for(let k=0;k<rounds;k++){
       const ok = isDowntrend ? padDoBuy(1, true) : padDoSell(1, true);
       if(!ok) break;
+      done++;
     }
+    // 自動売買もまとめてフロート表示(◯株購入/◯株売却)
+    if(done>0) padFloat(isDowntrend ? `${done}株購入` : `${done}株売却`, isDowntrend ? "buy" : "sell");
   }
   
   renderAll();
