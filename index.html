@@ -247,6 +247,24 @@
   }
   .qty-btn:active{background:rgba(255,179,0,.15);}
 
+  /* ══ 汎用モーダル ══ */
+  #mOverlay{
+    position:fixed; inset:0; z-index:70; background:rgba(0,0,0,.72);
+    display:none; align-items:center; justify-content:center; padding:20px;
+  }
+  #mBox{
+    width:100%; max-width:420px; background:var(--panel); border:1px solid var(--amber-dim);
+    padding:14px; box-shadow:0 10px 30px rgba(0,0,0,.8);
+  }
+  .m-title{color:var(--amber); font-size:15px; letter-spacing:2px; margin-bottom:8px;}
+  .m-msg{font-size:12px; color:var(--text); line-height:1.7; margin-bottom:10px; white-space:pre-wrap;}
+  #mText{
+    width:100%; height:90px; background:#000; color:var(--amber); border:1px solid var(--line);
+    font-family:var(--font-num); font-size:11px; padding:6px; resize:none; margin-bottom:10px;
+    word-break:break-all;
+  }
+  .m-btns{display:flex; gap:8px; justify-content:flex-end;}
+
   /* ══ バブル崩壊 ══ */
   .prestige{padding:12px; text-align:center;}
   .prestige p{font-size:12px; color:var(--dim); margin-bottom:8px; line-height:1.7;}
@@ -350,6 +368,20 @@
 </div>
 
 <div id="upgOverlay"></div>
+
+<!-- 汎用モーダル(セーブ出力/読込/確認ダイアログ) -->
+<div id="mOverlay">
+  <div id="mBox">
+    <div class="m-title" id="mTitle"></div>
+    <div class="m-msg" id="mMsg"></div>
+    <textarea id="mText" spellcheck="false"></textarea>
+    <div class="m-btns">
+      <button class="btn" id="mOk">OK</button>
+      <button class="btn" id="mCancel">キャンセル</button>
+    </div>
+  </div>
+</div>
+
 <div id="upgDrawer">
   <div class="drawer-head">
     <span>■ 強化ショップ <span class="dh-r" id="upgOwnedCount">0/50 取得</span></span>
@@ -1392,12 +1424,19 @@ function fireEarnings(){
 document.getElementById("prestigeBtn").onclick=()=>{
   const g=prestigeGain();
   if(g<1){ log("生涯収入 ¥1億 から相場眼を獲得できる"); return; }
-  if(!confirm(`バブルを崩壊させますか?\n資産・株・強化をすべて失い、相場眼 ${g} を獲得します(合計 ${S.eyes+g})。`)) return;
-  const eyes=S.eyes+g, pr=S.prestiges+1, rev=S.upgReveal||0;
-  S=newState(); S.eyes=eyes; S.prestiges=pr; S.upgReveal=rev;  // ？？？の公開状況は引き継ぐ
-  resetBoardDOM();
-  log(`第${pr}次バブル崩壊 ─ 相場眼 ${eyes}(全収入 +${eyes*8}%)`, true);
-  renderAll();
+  openModal({
+    title:"バブル崩壊",
+    msg:`資産・株・強化をすべて失い、相場眼 ${g} を獲得します(合計 ${S.eyes+g})。\n本当に崩壊させますか?`,
+    ok:"崩壊させる", cancel:"やめる",
+    onOk:()=>{
+      const eyes=S.eyes+g, pr=S.prestiges+1, rev=S.upgReveal||0;
+      S=newState(); S.eyes=eyes; S.prestiges=pr; S.upgReveal=rev;  // ？？？の公開状況は引き継ぐ
+      resetBoardDOM();
+      autoSave();
+      log(`第${pr}次バブル崩壊 ─ 相場眼 ${eyes}(全収入 +${eyes*8}%)`, true);
+      renderAll();
+    },
+  });
 };
 function resetBoardDOM(){
   rowEls.length=0; scrollBack=0;
@@ -1405,48 +1444,99 @@ function resetBoardDOM(){
   layoutBoard();
 }
 
+/* ════════════════════════ 汎用モーダル ════════════════════════ */
+const mOverlay=document.getElementById("mOverlay");
+const mTitle=document.getElementById("mTitle"), mMsg=document.getElementById("mMsg");
+const mText=document.getElementById("mText");
+const mOk=document.getElementById("mOk"), mCancel=document.getElementById("mCancel");
+function openModal(opt){
+  mTitle.textContent=opt.title||"";
+  mMsg.textContent=opt.msg||"";
+  if(opt.text!==undefined && opt.text!==null){
+    mText.style.display=""; mText.value=opt.text; mText.readOnly=!!opt.readOnly;
+  } else mText.style.display="none";
+  mOk.textContent=opt.ok||"OK";
+  if(opt.cancel){ mCancel.style.display=""; mCancel.textContent=opt.cancel; }
+  else mCancel.style.display="none";
+  mOverlay.style.display="flex";
+  mOk.onclick=()=>{ const v=mText.value; closeModal(); if(opt.onOk) opt.onOk(v); };
+  mCancel.onclick=()=>{ closeModal(); if(opt.onCancel) opt.onCancel(); };
+}
+function closeModal(){ mOverlay.style.display="none"; }
+
 /* ════════════════════════ セーブ ════════════════════════ */
 const SAVE_KEY="okuribito_save_v1";
-function encodeSave(){ return btoa(unescape(encodeURIComponent(JSON.stringify(S)))); }
+// hist(スパークライン履歴)はサイズが大きいので保存対象から除外し、毎秒保存を軽量化
+function saveData(){ const {hist, ...rest}=S; return rest; }
+function applySave(d){
+  S=Object.assign(newState(), d);
+  if(!d.hist) S.hist=STOCKS.map((_,i)=>[S.mult[i]||1]);  // 履歴は現在値から再構築
+  fixState();
+}
+function encodeSave(){ return btoa(unescape(encodeURIComponent(JSON.stringify(saveData())))); }
 function decodeSave(c){ return JSON.parse(decodeURIComponent(escape(atob(c.trim())))); }
 // 自動セーブ(localStorage)。プライベートモード等で失敗しても無視
 function autoSave(){
-  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){}
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(saveData())); }catch(e){}
 }
 // 起動時の自動ロード。成功したらtrue
 function autoLoad(){
   try{
     const raw=localStorage.getItem(SAVE_KEY);
     if(!raw) return false;
-    S=Object.assign(newState(), JSON.parse(raw));
-    fixState();
+    applySave(JSON.parse(raw));
     return true;
   }catch(e){ return false; }
 }
 document.getElementById("saveBtn").onclick=()=>{
   autoSave();
-  prompt("このコードをコピーして保存してください(自動セーブ済み):", encodeSave());
+  openModal({
+    title:"セーブ出力",
+    msg:"このコードをコピーして保管してください。別端末への引っ越しやバックアップに使えます。\n(このブラウザには毎秒自動セーブされています)",
+    text:encodeSave(), readOnly:true,
+    ok:"コードをコピー", cancel:"閉じる",
+    onOk:(v)=>{
+      mText.value=v;
+      try{
+        if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(v); }
+        else{ mText.style.display=""; mText.select(); document.execCommand("copy"); }
+        log("セーブコードをコピーしました", true);
+      }catch(e){ log("コピーできない場合は手動で選択してコピーしてください"); }
+    },
+  });
 };
 document.getElementById("loadBtn").onclick=()=>{
-  const c=prompt("セーブコードを貼り付け:");
-  if(!c) return;
-  try{
-    const d=decodeSave(c);
-    S=Object.assign(newState(), d);
-    fixState();
-    resetBoardDOM();
-    autoSave();
-    log("セーブを読み込みました", true);
-    renderAll();
-  }catch(e){ alert("読み込みに失敗しました"); }
+  openModal({
+    title:"セーブ読込",
+    msg:"セーブコードを下の欄に貼り付けて「読み込む」を押してください。\n(現在のデータは上書きされます)",
+    text:"", ok:"読み込む", cancel:"キャンセル",
+    onOk:(v)=>{
+      if(!v.trim()) return;
+      try{
+        applySave(decodeSave(v));
+        resetBoardDOM();
+        autoSave();
+        log("セーブを読み込みました", true);
+        renderAll();
+      }catch(e){
+        openModal({title:"エラー", msg:"セーブコードの読み込みに失敗しました。コードが完全にコピーされているか確認してください。", ok:"閉じる"});
+      }
+    },
+  });
 };
 document.getElementById("wipeBtn").onclick=()=>{
-  if(!confirm("セーブデータを完全に削除して最初からやり直しますか?\n(相場眼・？？？公開状況も含めてすべて消えます)")) return;
-  try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
-  S=newState();
-  resetBoardDOM();
-  log("データを初期化しました", true);
-  renderAll();
+  openModal({
+    title:"データ初期化",
+    msg:"セーブデータを完全に削除して最初からやり直しますか?\n(相場眼・？？？公開状況も含めてすべて消えます)",
+    ok:"初期化する", cancel:"やめる",
+    onOk:()=>{
+      try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+      S=newState();
+      resetBoardDOM();
+      log("データを初期化しました", true);
+      renderAll();
+    },
+  });
 };
 
 /* ════════════════════════ ヘッダー・時計 ════════════════════════ */
@@ -1512,8 +1602,8 @@ if(loaded) log("自動セーブから復元しました", true);
 window.addEventListener("resize", fitBottomBar);
 setTimeout(fitBottomBar, 300);   // フォント読込後に再調整
 
-// 自動セーブ:10秒ごと＋タブを閉じる/裏に回った時
-setInterval(autoSave, 10000);
+// 自動セーブ:毎秒＋タブを閉じる/裏に回った時
+setInterval(autoSave, 1000);
 window.addEventListener("beforeunload", autoSave);
 document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="hidden") autoSave(); });
 
