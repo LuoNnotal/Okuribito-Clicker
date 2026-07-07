@@ -441,6 +441,10 @@
   </header>
 
   <section>
+    <div class="sec-head"><span>■ このゲームについて</span><span class="r"><button class="qty-btn" id="howtoBtn">? How to play</button></span></div>
+  </section>
+
+  <section>
     <div class="sec-head"><span>■ 資産推移</span><span class="r" id="assetRangeBtns"><button class="qty-btn" data-rng="60">5分</button><button class="qty-btn on" data-rng="240">20分</button><button class="qty-btn" data-rng="720">1時間</button><button class="qty-btn" data-rng="0">全部</button></span></div>
     <canvas id="assetChart"></canvas>
   </section>
@@ -1444,7 +1448,7 @@ function buyUpg(u){
 }
 /* ════════════════════════ タブページ切替 ════════════════════════ */
 const PAGE_IDS=["assets","pad","board","upg","prestige"];
-let curPage="pad";   // 起動時はデイトレ画面
+let curPage="assets";   // 起動時は資産画面
 function showPage(p){
   curPage=p;
   for(const id of PAGE_IDS)
@@ -1862,6 +1866,14 @@ document.getElementById("prestigeBtn").onclick=()=>{
     },
   });
 };
+/* How to play(遊び方)モーダル */
+document.getElementById("howtoBtn").onclick=()=>{
+  openModal({
+    title:"How to play ─ 億り人への道",
+    msg:"きみの元手は¥100万。ここから総資産¥1億──「億り人」を目指す。\n\n【1. デイトレで軍資金を作る】\n「デイトレ」タブで日経225を安く買って高く売る。売却額が平均取得額を上回れば実現損益が積み上がる。利確チャンス・ナンピンチャンスの光るボタンが合図だ。\n\n【2. 配当で寝ていても稼ぐ】\n「銘柄」タブで個別銘柄を買い集めると、10秒ごとに配当が入り続ける。買えば買うほど収入は雪だるま式。100株買うたびに新しい銘柄が上場する。\n\n【3. 強化ショップで加速する】\n稼いだ金は「強化」タブで再投資。配当ブーストや自動デイトレを解放して、稼ぐ速度そのものを引き上げろ。\n\n【4. そして、バブル崩壊へ】\n総資産¥1億を超えたら「転生」タブでバブルを崩壊できる。すべてを失う代わりに「相場眼」を獲得し、全収入の永続強化と相場眼ショップの強力なバフで、次の周回はさらに速くなる。\n\n稼ぎ、増やし、崩壊させ、また稼ぐ。相場の頂で会おう。",
+    ok:"閉じる",
+  });
+};
 /* プレステージの説明モーダル */
 document.getElementById("prestigeInfoBtn").onclick=()=>{
   openModal({
@@ -2143,7 +2155,7 @@ let assetTickN=0;
 const loaded=autoLoad();   // 自動セーブがあれば復元
 layoutBoard(); buildUpgs(); buildEyeShop(); renderAll(); renderClock(); fitBottomBar();
 sampleAsset();             // 資産推移の起点を記録
-showPage("pad");           // 起動時はデイトレページ
+showPage("assets");        // 起動時は資産ページ
 if(loaded) log("自動セーブから復元しました", true);
 window.addEventListener("resize", fitBottomBar);
 setTimeout(fitBottomBar, 300);   // フォント読込後に再調整
