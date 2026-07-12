@@ -113,11 +113,13 @@
     box-shadow:0 3px 8px rgba(0,0,0,.4);
   }
 
-  /* ══ 検索・フィルタ・ソート(銘柄ページ) ══ */
+  /* ══ 検索・フィルタ・ソート(銘柄ページ):スクロールしても常に表示 ══ */
   .board-controls{
     padding:8px 12px; border-bottom:1px solid var(--line);
     display:flex; flex-direction:column; gap:6px;
-    background:rgba(255,179,0,.02);
+    position:sticky; z-index:44;   /* boardHead(45)のすぐ下に貼り付く */
+    background:var(--panel);
+    box-shadow:0 3px 8px rgba(0,0,0,.4);
   }
   #searchBox{
     width:100%; background:#000; border:1px solid var(--line); color:var(--amber);
@@ -299,6 +301,29 @@
   .qty-btn.on{background:rgba(255,179,0,.22); color:#FFD24D;}
   .qty-btn.danger{color:var(--up); border-color:#7a2b2b;}
 
+  /* ══ バージョン履歴(転生ページ) ══ */
+  .ver-list{padding:10px 12px; font-size:11px; line-height:1.7; color:var(--dim);}
+  .ver-list .v-row{padding:6px 0; border-bottom:1px dashed rgba(255,179,0,.15);}
+  .ver-list .v-row:last-child{border-bottom:none;}
+  .ver-list .v-num{color:var(--amber); font-weight:700; font-family:var(--font-num);}
+  .ver-list .v-date{color:var(--amber-dim); font-size:10px; margin-left:6px; font-family:var(--font-num);}
+
+  /* ══ ゴールデンタイム ══ */
+  #goldenBar{
+    display:none; padding:4px 12px; text-align:center; font-size:12px; font-weight:700;
+    letter-spacing:1px; color:#000; animation:goldenPulse 1s ease-in-out infinite;
+  }
+  #goldenBar.bargain{background:var(--down);}
+  #goldenBar.bubble{background:var(--up);}
+  #goldenPad{
+    display:none; margin:6px 0; padding:6px 10px; text-align:center;
+    font-size:13px; font-weight:700; letter-spacing:1px; color:#000;
+    animation:goldenPulse 1s ease-in-out infinite;
+  }
+  #goldenPad.bargain{background:var(--down);}
+  #goldenPad.bubble{background:var(--up);}
+  @keyframes goldenPulse{0%,100%{opacity:1;}50%{opacity:.6;}}
+
   /* ══ ズーム防止・はみ出し対策 ══ */
   button,select,input,textarea{touch-action:manipulation; max-width:100%; min-width:0;}
   .pf-row{flex-wrap:wrap; row-gap:2px;}
@@ -306,14 +331,6 @@
   .pf-sub{font-size:10px;}
   .pf-sub b{color:var(--amber-dim); font-weight:400; font-size:12px; text-shadow:none;}
   #divBonusWrap{cursor:pointer; border-bottom:1px dashed var(--amber-dim); padding-bottom:1px;}
-
-  /* ══ 折りたたみ(銘柄格納)ヘッダ ══ */
-  .folded-head{
-    padding:8px 12px; color:var(--amber-dim); font-size:12px; letter-spacing:1px;
-    cursor:pointer; border-bottom:1px solid var(--line); background:rgba(255,179,0,.045);
-    user-select:none;
-  }
-  .folded-head:active{background:rgba(255,179,0,.11);}
 
   /* ══ 実績タイル(極小コマ割り) ══ */
   .ach-sec-label{padding:6px 12px; font-size:11px; color:var(--amber-dim); letter-spacing:2px; border-bottom:1px solid var(--line); background:rgba(255,179,0,.03);}
@@ -489,6 +506,10 @@
   #log .lg-ach,   .m-msg .lg-ach{color:var(--amber); font-weight:700;}
   #log .lg-ipo,   .m-msg .lg-ipo{color:var(--amber); font-weight:700; text-shadow:0 0 6px rgba(255,179,0,.55);}
   #log .lg-gold,  .m-msg .lg-gold{color:var(--amber);}
+  .m-msg .news-item{padding:5px 0; border-bottom:1px dashed rgba(255,179,0,.18);}
+  .m-msg .news-item.has-sec{cursor:pointer;}
+  .m-msg .news-item.has-sec:active{background:rgba(255,179,0,.10);}
+  .m-msg .ni-hint{color:var(--amber-dim); font-size:10px;}
   #log .new{color:var(--amber);}
 </style>
 </head>
@@ -499,6 +520,7 @@
   <span class="tb-asset-wrap" id="assetTopWrap"><span class="tb-asset-label">総資産</span><span class="tb-asset" id="assetTop">¥0</span></span>
   <span class="tb-title">キミは億り人になれるか？</span>
   <span class="tb-mid"><span class="live">●</span> <span id="session">前場</span> <span id="clock"></span></span>
+  <div id="goldenBar"></div>
 </div>
 
 <!-- ══ 資産タブ ══ -->
@@ -528,7 +550,7 @@
       <div><span>生涯収入(配当＋デイトレ)</span><b id="statLifetime" class="stat-gold">¥0</b></div>
       <div><span>実現損益</span><b id="statRealized" class="pr-flat">¥0</b></div>
       <div><span>株式評価額</span><b id="statEquity" class="pr-flat">¥0</b></div>
-      <div><span>配当収入</span><b id="statDps" class="stat-gold">¥0/10s</b></div>
+      <div><span>配当収入</span><b id="statDps" class="stat-gold">¥0/秒</b></div>
       <div><span>保有銘柄数</span><b id="statOwnedKinds">0/225</b></div>
       <div><span>総保有株数</span><b id="statOwnedShares">0株</b></div>
       <div><span>デイトレ保有</span><b id="statZara">0株</b></div>
@@ -546,6 +568,7 @@
 <div class="page" id="page-pad">
   <section class="pad-sec">
     <div class="sec-head" id="padHead"><span>■ 日経225デイトレ</span><span class="r"><button class="qty-btn" id="padQtyBtn">×1株</button> <span id="nkVal">日経 ¥70,000</span></span></div>
+    <div id="goldenPad"></div>
     <div class="pad-info">
       <span id="tapCount">自動デイトレ機能:未解放</span>
       <button class="qty-btn" id="autoToggleBtn" style="display:none;">自動売買:ON</button>
@@ -575,7 +598,7 @@
 <!-- ══ 個別銘柄タブ ══ -->
 <div class="page" id="page-board">
   <section>
-    <div class="sec-head" id="boardHead"><span>■ 銘柄ボード</span><span class="r"><button class="qty-btn" id="boardQtyBtn">単位×100株</button> <span id="boardCount">日経225</span></span></div>
+    <div class="sec-head" id="boardHead"><span>■ 銘柄ボード</span><span class="r"><select id="boardQtySel" class="qty-sel"><option value="1">×1株</option><option value="10">×10株</option><option value="100" selected>×100株</option><option value="1000">×1000株</option><option value="10000">×10000株</option><option value="all">全売買</option></select> <span id="boardCount">日経225</span></span></div>
     <div class="board-controls">
       <input type="text" id="searchBox" placeholder="銘柄コード・銘柄名で検索" autocomplete="off" enterkeyhint="search">
       <div class="bc-row">
@@ -587,15 +610,15 @@
           <option value="price">株価順</option>
           <option value="yield">配当利回り順</option>
           <option value="owned">保有株数順</option>
+          <option value="pl">含み益順</option>
           <option value="kana">五十音順</option>
         </select>
         <button class="qty-btn" id="sortDirBtn">▲昇順</button>
+        <button class="qty-btn" id="resetFilterBtn">リセット</button>
       </div>
     </div>
     <div id="board">
-      <div class="folded-head" id="scrollUpHead" style="display:none;"></div>
       <div id="activeBody"></div>
-      <div class="folded-head" id="scrollDownHead" style="display:none;"></div>
       <div class="unlock-hint" id="resultHint"></div>
     </div>
   </section>
@@ -604,10 +627,11 @@
 <!-- ══ 強化タブ ══ -->
 <div class="page" id="page-upg">
   <section>
-    <div class="sec-head" id="shopHead"><span>■ ショップ</span><span class="r">買付可能 <b id="cashUpg" class="cash-em">¥0</b> ／ 相場眼 <b id="eyesUpg" class="cash-em">0</b></span></div>
+    <div class="sec-head" id="shopHead"><span>■ ショップ</span><span class="r">買付可能 <b id="cashUpg" class="cash-em">¥0</b> ／ 相場眼 <b id="eyesUpg" class="cash-em">0</b> ／ イナゴ <b id="chipsUpg" class="cash-em">0</b></span></div>
     <div class="shop-tabs">
-      <button class="shoptab on" id="shopTabUpg">強化ショップ<span class="st-sub" id="upgOwnedCount">0/58 取得</span></button>
-      <button class="shoptab" id="shopTabEye">相場眼ショップ<span class="st-sub" id="eyeOwnedCount">0/10 取得</span></button>
+      <button class="shoptab on" id="shopTabUpg">強化<span class="st-sub" id="upgOwnedCount">0/58 取得</span></button>
+      <button class="shoptab" id="shopTabEye">相場眼<span class="st-sub" id="eyeOwnedCount">0/10 取得</span></button>
+      <button class="shoptab" id="shopTabInago">イナゴ<span class="st-sub" id="inagoChipsCount">×0</span></button>
     </div>
     <div id="upgPane">
       <div style="padding:8px 12px; border-bottom:1px solid var(--line);">
@@ -620,6 +644,10 @@
       <div class="upg-summary">バブル崩壊で得た<b>相場眼</b>を消費して購入する強力な永続バフ。<b>崩壊後も失われず</b>、初期化以外では消えません。<br>※相場眼を消費すると「全収入+8%/個」の常時ボーナスはその分減ります。</div>
       <div class="upg-grid" id="eyeShopGrid"></div>
     </div>
+    <div id="inagoPane" style="display:none;">
+      <div class="upg-summary">実績報酬で得た<b>イナゴチップス</b>を消費する特別ショップ。<b>チップスと永続商品は崩壊後も失われません</b>。<br>所持イナゴチップス <b id="chipsInago">×0</b></div>
+      <div class="upg-grid" id="inagoGrid"></div>
+    </div>
   </section>
 </div>
 
@@ -628,6 +656,9 @@
   <section>
     <div class="sec-head"><span>■ 実績</span><span class="r" id="achCount">0/0 達成</span></div>
     <div class="upg-summary" id="achSummary"></div>
+    <div style="padding:8px 12px; border-bottom:1px solid var(--line);">
+      <button class="btn" id="claimAllBtn" style="width:100%;">≫ 達成済みの報酬をまとめて受け取る</button>
+    </div>
     <div class="ach-sec-label">■ 全体実績(タップで詳細)</div>
     <div class="ach-tiles wide" id="achGridMain"></div>
     <div class="ach-sec-label">■ 銘柄別実績 ─ 各銘柄 500/1000/5000/10000株(タップで詳細)</div>
@@ -648,7 +679,7 @@
   </section>
 
   <section>
-    <div class="sec-head"><span>■ セーブデータ</span></div>
+    <div class="sec-head"><span>■ セーブデー<span id="debugTap">タ</span></span></div>
     <div class="save-box">
       <p>ゲームは1秒ごとに自動セーブされます。機種変更やバックアップにはセーブコードを利用してください。</p>
       <div class="save-row">
@@ -656,6 +687,30 @@
         <button class="btn" id="loadBtn">セーブ読込</button>
         <button class="btn" id="wipeBtn" style="color:var(--up); border-color:var(--up);">初期化</button>
       </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span>■ バージョン履歴</span><span class="r">現在 <b>v3.1.0</b></span></div>
+    <div class="ver-list">
+      <div class="v-row"><span class="v-num">v3.1.0</span><span class="v-date">2026/07/12</span><br>
+        配当を「10秒ごと」から「毎秒振込」に一新。デイトレに10秒限定の「ゴールデンタイム」(暴落バーゲン祭/高騰バブル祭)が稀に発生。売買単位のプルダウン化、タブ間のスクロール位置保持、フィルタのリセットボタン、ニュースから関連銘柄一覧の表示、シグナルを「利確チャンス」(含み益＋高騰の両立時のみ)に変更。議決権行使回数・銘柄コラボの実績13種を追加し、資産推移グラフを永続化。このバージョン履歴ページも追加。</div>
+      <div class="v-row"><span class="v-num">v3.0.0</span><span class="v-date">2026/07/12</span><br>
+        新通貨「イナゴチップス」と第3のショップ「イナゴショップ」(タイムリープ/ファンド出資/ひらめき/黄金のイナゴ像/指サック)を実装。実績報酬は「達成」タイルをタップして現金＋チップスを受け取る方式に。議決権の解放・可決/否決をモーダルで大きく演出。ゲームバランスを大改修 ─ 同カテゴリのバフを加算方式へ、実績バフを1/10にデフレ、トヨタ株価を約50兆円に、相場眼の獲得式を0.4乗に(周回ほど渋く)。</div>
+      <div class="v-row"><span class="v-num">v2.3.0</span><span class="v-date">2026/07/12</span><br>
+        検索・業種フィルタ・ソート欄をスクロール中も常時表示(固定化)。銘柄格納(▲▼窓表示)を完全廃止し、解禁済み全銘柄の常時一覧表示に。含み益順ソートを追加。製作者用の隠しコマンドを実装。</div>
+      <div class="v-row"><span class="v-num">v2.2.0</span><span class="v-date">2026/07/11</span><br>
+        約定履歴・ニュースを種別ごとに色分け(買い赤/売り緑・暴落・実績・新規上場など)。新規上場は0.5秒のスクロール演出で登場。売買ボタンから「◯株購入/売却」の浮き文字。ニュース欄を3行表示に拡大し、画面下タップで履歴20件モーダル。デイトレを2秒足に統一し約定も色分きフォーマットに。</div>
+      <div class="v-row"><span class="v-num">v2.1.0</span><span class="v-date">2026/07/11</span><br>
+        ネタバレ防止仕様 ─ バフ一覧は有効になった項目のみ表示、未上場銘柄の実績タイルは？？？で伏せ字(一度上場すれば崩壊後も表示)。銘柄別実績は500株スタートの4段階=900種に整理。長文モーダルのはみ出し(閉じるボタンが画面外)を修正。</div>
+      <div class="v-row"><span class="v-num">v2.0.0</span><span class="v-date">2026/07/10</span><br>
+        「一番下の銘柄を100株買うと次が上場」する段階的解放を復活。225銘柄×株数段階の銘柄別実績(極小タイルUI・タップで詳細)を実装。無限稼ぎ対策として売買を同一単価とし、売却系強化を「利確ボーナス」制へ全面移行。強化の一括購入、銘柄ボードの長押し連続売買(3倍速)、有効バフ一覧、昇順/降順ソート、ズーム・はみ出し対策。</div>
+      <div class="v-row"><span class="v-num">v1.2.0</span><span class="v-date">2026/07/10</span><br>
+        議決権の行使(30,000株で増配チャレンジ・成功率5択)、分散投資ボーナス(6銘柄以上で配当+種類数%)と集中投資リスク(1〜5銘柄集中で暴落判定)を導入。自動売買のON/OFFトグル、デイトレ・銘柄それぞれの評価損益表示、ショップヘッダの固定、実績バッジの既読化。</div>
+      <div class="v-row"><span class="v-num">v1.1.0</span><span class="v-date">2026/07/08</span><br>
+        ローソク足を50本に拡大。銘柄検索(ひらがな/カタカナ・全半角対応)・業種/高配当フィルタ・各種ソート、全株売却ボタン、実績システム(約33種)を実装。自動売買を賢化(利確チャンスで売り・ナンピンチャンスで買い)。画面内の行だけ更新する軽量化。※この時期は全銘柄表示制(のちv2.0.0で解放制に回帰)。</div>
+      <div class="v-row"><span class="v-num">v1.0.0</span><span class="v-date">2026/07上旬</span><br>
+        「キミは億り人になれるか？」初版リリース。前身「兜町タイクーン」を全面リニューアルし、日経225全225銘柄・配当システム・日経225デイトレ・強化/相場眼ショップ・バブル崩壊(転生)・毎秒オートセーブを実装。</div>
     </div>
   </section>
 
@@ -680,7 +735,7 @@
     <div class="pf-row"><span id="divBonusWrap"><span id="divBonusLabel">分散ボーナス</span> <b id="divBonusTxt">─</b></span><span class="pf-right">買付可能 <b id="cashBoard" class="cash-em">¥0</b></span></div>
     <div class="pf-row pf-sub"><span class="pf-right">総資産 <b id="assetBoard">¥0</b></span></div>
     <div class="pf-row">
-      <span class="pf-right"><span>配当 <b id="dpsBoard">¥0</b>/10s</span><span>評価損益 <b id="boardPL" class="pr-flat">¥0</b></span><span>実現損益 <b id="realizedBoard" class="pr-flat">¥0</b></span></span>
+      <span class="pf-right"><span>配当 <b id="dpsBoard">¥0</b>/秒</span><span>評価損益 <b id="boardPL" class="pr-flat">¥0</b></span><span>実現損益 <b id="realizedBoard" class="pr-flat">¥0</b></span></span>
     </div>
     <div class="pf-row">
       <span class="subtabs">
@@ -964,8 +1019,8 @@ function sig3(n){ const p=Math.pow(10, Math.max(0, Math.floor(Math.log10(n))-2))
 // 銘柄ごとの固定疑似乱数(0〜1)。リロードしても同じ値になる
 function prand(i){ const x=Math.sin(i*127.1+311.7)*43758.5453; return x-Math.floor(x); }
 const STOCKS = RAW.map((r,i)=>{
-  // トヨタ41兆に到達するバランス調整
-  const growth = 1.115;
+  // 最終銘柄(トヨタ)が約50兆円になるバランス調整(1000×1.1163^224≒50.3兆)
+  const growth = 1.1163;
   const base = sig3(1000*Math.pow(growth, i));
   // 配当利回り:株価の0.2〜6.0%(銘柄ごとに固定)
   const yld = 0.002 + prand(i)*0.058;
@@ -1099,7 +1154,7 @@ function newState(){
     buff:STOCKS.map(()=>({until:0, rate:1})),
     earnings:STOCKS.map(()=>({quarter:"1Q", earnUntil:0, divMult:1.0, badgeUntil:0, badge:""})),
     sellBoost:STOCKS.map(()=>1.1),  // 売却による配当ブースト（初期1.1、売却するたびに低下）
-    divNext:STOCKS.map(()=>0),      // 次回配当の支払時刻(購入から10秒サイクル)
+    divNext:STOCKS.map(()=>0),      // 次回配当の支払時刻(購入から1秒サイクル)
     upg:{},
     eyeShop:{},                       // 相場眼ショップの購入品(崩壊後も引き継ぎ)
     upgReveal:0,                      // ？？？強化の公開数
@@ -1110,7 +1165,14 @@ function newState(){
     autoTradeOn:true,                 // 自動売買のON/OFF(解放後に切替・保存される)
     voteBonus:STOCKS.map(()=>0),      // 議決権行使による利回り上乗せ(小数)
     voteUsed:STOCKS.map(()=>false),   // 議決権を行使済みか(銘柄ごとに一度きり)
-    achNew:{},                        // NEWバッジ用:未読の新規解除実績
+    achNew:{},                        // (旧NEWバッジ用・互換のため残置)
+    achClaimed:{},                    // 実績報酬の受領済み管理(崩壊後も引き継ぎ)
+    inagoChips:0,                     // イナゴチップス(実績報酬のプレミアム通貨)
+    inagoShop:{g:0,f:false},          // イナゴショップ(g=黄金のイナゴ像の数, f=指サック)
+    voteNoted:STOCKS.map(()=>false),  // 議決権解放モーダルを表示済みか
+    firstPlay:true,                   // 初回プレイフラグ(How to playを自動表示)
+    voteCount:0,                      // 議決権の累計行使回数(実績用)
+    assetHist:[],                     // 資産推移グラフのデータ(リロードしても消えない)
     unlocked:INITIAL_VISIBLE,         // 解禁済み銘柄数(段階的解放)
     maxUnlocked:INITIAL_VISIBLE,      // 過去最大の解禁数(実績タイルの表示用・崩壊後も引き継ぎ)
     unit1k:false, unit10k:false,      // 売買単位×1000/×10000の解放フラグ
@@ -1147,6 +1209,15 @@ function fixState(){
   while(S.voteUsed.length<n) S.voteUsed.push(false);
   S.voteUsed.length=n;
   if(!S.achNew) S.achNew={};
+  if(!S.achClaimed) S.achClaimed={};
+  if(S.inagoChips===undefined) S.inagoChips=0;
+  if(!S.inagoShop) S.inagoShop={g:0,f:false};
+  if(!S.voteNoted) S.voteNoted=STOCKS.map(()=>false);
+  while(S.voteNoted.length<n) S.voteNoted.push(false);
+  S.voteNoted.length=n;
+  if(S.firstPlay===undefined) S.firstPlay=false;   // 既存セーブには出さない
+  if(S.voteCount===undefined) S.voteCount=0;
+  if(!Array.isArray(S.assetHist)) S.assetHist=[];
   // 廃止済みの「100株保有」銘柄別実績を旧セーブから掃除
   for(const k of Object.keys(S.ach))    if(/^s\d+_100$/.test(k)) delete S.ach[k];
   for(const k of Object.keys(S.achNew)) if(/^s\d+_100$/.test(k)) delete S.achNew[k];
@@ -1190,9 +1261,9 @@ const EYE_ITEMS=[
   {id:"e_god",     cost:50, name:"相場神の御業",       desc:"配当×5 ＆ 利確ボーナス +50%(利益分に)"},
 ];
 function hasEye(id){ return !!(S.eyeShop && S.eyeShop[id]); }
-function eyeIncomeMult(){ let m=1; if(hasEye("e_income2"))m*=2; if(hasEye("e_income3"))m*=3; return m; }
-function eyeDivMult(){ let m=1; if(hasEye("e_div2"))m*=2; if(hasEye("e_div3"))m*=3; if(hasEye("e_god"))m*=5; return m; }
-function eyeSellMult(){ let m=1; if(hasEye("e_sell25"))m*=1.25; if(hasEye("e_god"))m*=1.5; return m; }
+function eyeIncomeMult(){ let a=0; if(hasEye("e_income2"))a+=1; if(hasEye("e_income3"))a+=2; return 1+a; }   // 加算
+function eyeDivMult(){ let a=0; if(hasEye("e_div2"))a+=1; if(hasEye("e_div3"))a+=2; if(hasEye("e_god"))a+=4; return 1+a; }   // 加算
+function eyeSellMult(){ let a=0; if(hasEye("e_sell25"))a+=0.25; if(hasEye("e_god"))a+=0.5; return 1+a; }   // 加算
 function eyeBuyDiscM(){ return hasEye("e_buy15") ? 0.85 : 1; }
 function eyeStockDiscM(){ return hasEye("e_stock20") ? 0.8 : 1; }
 function eyeAlgoMult(){ return hasEye("e_algo2") ? 2 : 1; }
@@ -1210,64 +1281,85 @@ function unrealizedPL(){
 }
 const ACH=[
  /* 総資産の到達 */
- {id:"a10m",  cat:"総資産",   name:"小金持ち",         desc:"総資産 ¥1,000万 に到達",           reward:{inc:0.02}, cond:()=>S.money+totalEquity()>=1e7},
- {id:"a100m", cat:"総資産",   name:"億り人",           desc:"総資産 ¥1億 に到達",               reward:{inc:0.05}, cond:()=>S.money+totalEquity()>=1e8},
- {id:"a1b",   cat:"総資産",   name:"大富豪",           desc:"総資産 ¥10億 に到達",              reward:{inc:0.05}, cond:()=>S.money+totalEquity()>=1e9},
- {id:"a10b",  cat:"総資産",   name:"財閥の器",         desc:"総資産 ¥100億 に到達",             reward:{inc:0.05}, cond:()=>S.money+totalEquity()>=1e10},
- {id:"a1t",   cat:"総資産",   name:"兆り人",           desc:"総資産 ¥1兆 に到達",               reward:{inc:0.10}, cond:()=>S.money+totalEquity()>=1e12},
- {id:"a1kei", cat:"総資産",   name:"京の頂",           desc:"総資産 ¥1京 に到達",               reward:{inc:0.10}, cond:()=>S.money+totalEquity()>=1e16},
+ {id:"a10m",  cat:"総資産",   name:"小金持ち",         desc:"総資産 ¥1,000万 に到達",           reward:{inc:0.002}, cond:()=>S.money+totalEquity()>=1e7},
+ {id:"a100m", cat:"総資産",   name:"億り人",           desc:"総資産 ¥1億 に到達",               reward:{inc:0.005}, cond:()=>S.money+totalEquity()>=1e8},
+ {id:"a1b",   cat:"総資産",   name:"大富豪",           desc:"総資産 ¥10億 に到達",              reward:{inc:0.005}, cond:()=>S.money+totalEquity()>=1e9},
+ {id:"a10b",  cat:"総資産",   name:"財閥の器",         desc:"総資産 ¥100億 に到達",             reward:{inc:0.005}, cond:()=>S.money+totalEquity()>=1e10},
+ {id:"a1t",   cat:"総資産",   name:"兆り人",           desc:"総資産 ¥1兆 に到達",               reward:{inc:0.01}, cond:()=>S.money+totalEquity()>=1e12},
+ {id:"a1kei", cat:"総資産",   name:"京の頂",           desc:"総資産 ¥1京 に到達",               reward:{inc:0.01}, cond:()=>S.money+totalEquity()>=1e16},
  /* 配当収入(/10秒)の到達 */
- {id:"d10k",  cat:"配当収入", name:"配当生活の芽",     desc:"配当収入 ¥1万/10s に到達",         reward:{div:0.03}, cond:()=>totalDps()>=1e4},
- {id:"d1m",   cat:"配当収入", name:"配当長者",         desc:"配当収入 ¥100万/10s に到達",       reward:{div:0.05}, cond:()=>totalDps()>=1e6},
- {id:"d100m", cat:"配当収入", name:"配当王",           desc:"配当収入 ¥1億/10s に到達",         reward:{div:0.05}, cond:()=>totalDps()>=1e8},
- {id:"d1t",   cat:"配当収入", name:"配当神",           desc:"配当収入 ¥1兆/10s に到達",         reward:{div:0.10}, cond:()=>totalDps()>=1e12},
+ {id:"d10k",  cat:"配当収入", name:"配当生活の芽",     desc:"配当収入 ¥500/秒 に到達",          reward:{div:0.003}, cond:()=>totalDps()>=500},
+ {id:"d1m",   cat:"配当収入", name:"配当長者",         desc:"配当収入 ¥5万/秒 に到達",          reward:{div:0.005}, cond:()=>totalDps()>=5e4},
+ {id:"d100m", cat:"配当収入", name:"配当王",           desc:"配当収入 ¥500万/秒 に到達",        reward:{div:0.005}, cond:()=>totalDps()>=5e6},
+ {id:"d1t",   cat:"配当収入", name:"配当神",           desc:"配当収入 ¥500億/秒 に到達",        reward:{div:0.01}, cond:()=>totalDps()>=5e10},
  /* 含み益 */
- {id:"u1m",   cat:"含み益",   name:"順風満帆",         desc:"含み益 ¥100万 を達成",             reward:{div:0.02}, cond:()=>unrealizedPL()>=1e6},
- {id:"u100m", cat:"含み益",   name:"塩漬け知らず",     desc:"含み益 ¥1億 を達成",               reward:{div:0.03}, cond:()=>unrealizedPL()>=1e8},
- {id:"u10b",  cat:"含み益",   name:"天与の握力",       desc:"含み益 ¥100億 を達成",             reward:{div:0.05}, cond:()=>unrealizedPL()>=1e10},
+ {id:"u1m",   cat:"含み益",   name:"順風満帆",         desc:"含み益 ¥100万 を達成",             reward:{div:0.002}, cond:()=>unrealizedPL()>=1e6},
+ {id:"u100m", cat:"含み益",   name:"塩漬け知らず",     desc:"含み益 ¥1億 を達成",               reward:{div:0.003}, cond:()=>unrealizedPL()>=1e8},
+ {id:"u10b",  cat:"含み益",   name:"天与の握力",       desc:"含み益 ¥100億 を達成",             reward:{div:0.005}, cond:()=>unrealizedPL()>=1e10},
  /* 一度の売却益 */
- {id:"s100k", cat:"売却益",   name:"初めての利確",     desc:"一度の売却で ¥10万 の利益",        reward:{sell:0.02}, cond:()=>S.maxSale>=1e5},
- {id:"s10m",  cat:"売却益",   name:"大勝ち",           desc:"一度の売却で ¥1,000万 の利益",     reward:{sell:0.03}, cond:()=>S.maxSale>=1e7},
- {id:"s1b",   cat:"売却益",   name:"世紀の売り抜け",   desc:"一度の売却で ¥10億 の利益",        reward:{sell:0.05}, cond:()=>S.maxSale>=1e9},
+ {id:"s100k", cat:"売却益",   name:"初めての利確",     desc:"一度の売却で ¥10万 の利益",        reward:{sell:0.002}, cond:()=>S.maxSale>=1e5},
+ {id:"s10m",  cat:"売却益",   name:"大勝ち",           desc:"一度の売却で ¥1,000万 の利益",     reward:{sell:0.003}, cond:()=>S.maxSale>=1e7},
+ {id:"s1b",   cat:"売却益",   name:"世紀の売り抜け",   desc:"一度の売却で ¥10億 の利益",        reward:{sell:0.005}, cond:()=>S.maxSale>=1e9},
  /* デイトレ */
- {id:"t100",  cat:"デイトレ", name:"デイトレ見習い",   desc:"デイトレ売買を累計100回",          reward:{sell:0.02}, cond:()=>S.padTrades>=100},
- {id:"t1k",   cat:"デイトレ", name:"専業デイトレーダー",desc:"デイトレ売買を累計1,000回",       reward:{sell:0.03}, cond:()=>S.padTrades>=1000},
- {id:"t10k",  cat:"デイトレ", name:"スキャルピングの鬼",desc:"デイトレ売買を累計10,000回",      reward:{sell:0.05}, cond:()=>S.padTrades>=10000},
- {id:"z10k",  cat:"デイトレ", name:"日経225爆買い",    desc:"デイトレで1万株を同時保有",        reward:{sell:0.05}, cond:()=>S.zaraStock>=10000},
+ {id:"t100",  cat:"デイトレ", name:"デイトレ見習い",   desc:"デイトレ売買を累計100回",          reward:{sell:0.002}, cond:()=>S.padTrades>=100},
+ {id:"t1k",   cat:"デイトレ", name:"専業デイトレーダー",desc:"デイトレ売買を累計1,000回",       reward:{sell:0.003}, cond:()=>S.padTrades>=1000},
+ {id:"t10k",  cat:"デイトレ", name:"スキャルピングの鬼",desc:"デイトレ売買を累計10,000回",      reward:{sell:0.005}, cond:()=>S.padTrades>=10000},
+ {id:"z10k",  cat:"デイトレ", name:"日経225爆買い",    desc:"デイトレで1万株を同時保有",        reward:{sell:0.005}, cond:()=>S.zaraStock>=10000},
  /* 総保有株数 */
- {id:"h1k",   cat:"保有株数", name:"千株の壁",         desc:"総保有株数 1,000株",               reward:{div:0.02}, cond:()=>totalOwnedShares()>=1e3},
- {id:"h10k",  cat:"保有株数", name:"万株コレクター",   desc:"総保有株数 1万株",                 reward:{div:0.03}, cond:()=>totalOwnedShares()>=1e4},
- {id:"h100k", cat:"保有株数", name:"十万株の主",       desc:"総保有株数 10万株",                reward:{div:0.05}, cond:()=>totalOwnedShares()>=1e5},
- {id:"h1m",   cat:"保有株数", name:"百万株の帝王",     desc:"総保有株数 100万株",               reward:{div:0.10}, cond:()=>totalOwnedShares()>=1e6},
+ {id:"h1k",   cat:"保有株数", name:"千株の壁",         desc:"総保有株数 1,000株",               reward:{div:0.002}, cond:()=>totalOwnedShares()>=1e3},
+ {id:"h10k",  cat:"保有株数", name:"万株コレクター",   desc:"総保有株数 1万株",                 reward:{div:0.003}, cond:()=>totalOwnedShares()>=1e4},
+ {id:"h100k", cat:"保有株数", name:"十万株の主",       desc:"総保有株数 10万株",                reward:{div:0.005}, cond:()=>totalOwnedShares()>=1e5},
+ {id:"h1m",   cat:"保有株数", name:"百万株の帝王",     desc:"総保有株数 100万株",               reward:{div:0.01}, cond:()=>totalOwnedShares()>=1e6},
  /* 保有銘柄数 */
- {id:"k10",   cat:"分散投資", name:"分散投資デビュー", desc:"10銘柄を保有する",                 reward:{div:0.02}, cond:()=>ownedStockCount()>=10},
- {id:"k50",   cat:"分散投資", name:"銘柄ハンター",     desc:"50銘柄を保有する",                 reward:{div:0.03}, cond:()=>ownedStockCount()>=50},
- {id:"k100",  cat:"分散投資", name:"三桁の風格",       desc:"100銘柄を保有する",                reward:{div:0.05}, cond:()=>ownedStockCount()>=100},
- {id:"k225",  cat:"分散投資", name:"日経225コンプ",    desc:"全225銘柄を保有する",              reward:{div:0.20}, cond:()=>ownedStockCount()>=STOCKS.length},
+ {id:"k10",   cat:"分散投資", name:"分散投資デビュー", desc:"10銘柄を保有する",                 reward:{div:0.002}, cond:()=>ownedStockCount()>=10},
+ {id:"k50",   cat:"分散投資", name:"銘柄ハンター",     desc:"50銘柄を保有する",                 reward:{div:0.003}, cond:()=>ownedStockCount()>=50},
+ {id:"k100",  cat:"分散投資", name:"三桁の風格",       desc:"100銘柄を保有する",                reward:{div:0.005}, cond:()=>ownedStockCount()>=100},
+ {id:"k225",  cat:"分散投資", name:"日経225コンプ",    desc:"全225銘柄を保有する",              reward:{div:0.02}, cond:()=>ownedStockCount()>=STOCKS.length},
  /* 実現損益 */
- {id:"r1m",   cat:"実現損益", name:"勝ち組の入口",     desc:"実現損益 +¥100万 を達成",          reward:{inc:0.02}, cond:()=>S.realized>=1e6},
- {id:"r100m", cat:"実現損益", name:"相場の勝者",       desc:"実現損益 +¥1億 を達成",            reward:{inc:0.03}, cond:()=>S.realized>=1e8},
- {id:"r10b",  cat:"実現損益", name:"兜町の伝説",       desc:"実現損益 +¥100億 を達成",          reward:{inc:0.05}, cond:()=>S.realized>=1e10},
+ {id:"r1m",   cat:"実現損益", name:"勝ち組の入口",     desc:"実現損益 +¥100万 を達成",          reward:{inc:0.002}, cond:()=>S.realized>=1e6},
+ {id:"r100m", cat:"実現損益", name:"相場の勝者",       desc:"実現損益 +¥1億 を達成",            reward:{inc:0.003}, cond:()=>S.realized>=1e8},
+ {id:"r10b",  cat:"実現損益", name:"兜町の伝説",       desc:"実現損益 +¥100億 を達成",          reward:{inc:0.005}, cond:()=>S.realized>=1e10},
  /* その他 */
- {id:"l100m", cat:"生涯収入", name:"稼ぐ体質",         desc:"生涯収入 ¥1億 に到達",             reward:{div:0.03}, cond:()=>S.lifetime>=1e8},
- {id:"l1t",   cat:"生涯収入", name:"生涯兆稼ぎ",       desc:"生涯収入 ¥1兆 に到達",             reward:{div:0.05}, cond:()=>S.lifetime>=1e12},
- {id:"p1",    cat:"転生",     name:"最初の崩壊",       desc:"バブル崩壊を1回実行する",          reward:{inc:0.05}, cond:()=>(S.prestiges||0)>=1},
- {id:"p5",    cat:"転生",     name:"崩壊の常連",       desc:"バブル崩壊を5回実行する",          reward:{inc:0.10}, cond:()=>(S.prestiges||0)>=5},
- {id:"ucomp", cat:"コンプ",   name:"強化コンプリート", desc:"強化ショップの全強化を取得する",   reward:{inc:0.10}, cond:()=>UPGRADES.every(u=>S.upg[u.id])},
- {id:"ecomp", cat:"コンプ",   name:"相場眼コンプリート",desc:"相場眼ショップの全品を購入する",  reward:{inc:0.10}, cond:()=>EYE_ITEMS.every(it=>hasEye(it.id))},
+ {id:"l100m", cat:"生涯収入", name:"稼ぐ体質",         desc:"生涯収入 ¥1億 に到達",             reward:{div:0.003}, cond:()=>S.lifetime>=1e8},
+ {id:"l1t",   cat:"生涯収入", name:"生涯兆稼ぎ",       desc:"生涯収入 ¥1兆 に到達",             reward:{div:0.005}, cond:()=>S.lifetime>=1e12},
+ {id:"p1",    cat:"転生",     name:"最初の崩壊",       desc:"バブル崩壊を1回実行する",          reward:{inc:0.005}, cond:()=>(S.prestiges||0)>=1},
+ {id:"p5",    cat:"転生",     name:"崩壊の常連",       desc:"バブル崩壊を5回実行する",          reward:{inc:0.01}, cond:()=>(S.prestiges||0)>=5},
+ {id:"ucomp", cat:"コンプ",   name:"強化コンプリート", desc:"強化ショップの全強化を取得する",   reward:{inc:0.01}, cond:()=>UPGRADES.every(u=>S.upg[u.id])},
+ {id:"ecomp", cat:"コンプ",   name:"相場眼コンプリート",desc:"相場眼ショップの全品を購入する",  reward:{inc:0.01}, cond:()=>EYE_ITEMS.every(it=>hasEye(it.id))},
+ /* 議決権行使回数(成功・失敗を問わず累計) */
+ {id:"v1",   cat:"議決権", name:"初めての株主提案",   desc:"議決権を累計1回行使する",     reward:{inc:0.002}, cond:()=>S.voteCount>=1},
+ {id:"v5",   cat:"議決権", name:"声を上げる株主",     desc:"議決権を累計5回行使する",     reward:{inc:0.003}, cond:()=>S.voteCount>=5},
+ {id:"v10",  cat:"議決権", name:"物言う株主",         desc:"議決権を累計10回行使する",    reward:{inc:0.005}, cond:()=>S.voteCount>=10},
+ {id:"v50",  cat:"議決権", name:"アクティビスト",     desc:"議決権を累計50回行使する",    reward:{inc:0.01},  cond:()=>S.voteCount>=50},
+ {id:"v100", cat:"議決権", name:"総会屋の影",         desc:"議決権を累計100回行使する",   reward:{inc:0.015}, cond:()=>S.voteCount>=100},
+ {id:"v225", cat:"議決権", name:"日本市場の支配者",   desc:"議決権を累計225回行使する",   reward:{inc:0.03},  cond:()=>S.voteCount>=225},
+ /* 銘柄コラボ・コンプリート(対象銘柄を各1,000株以上保有) */
+ {id:"c_pokemon",    cat:"コラボ", name:"スマホアプリ協業",   desc:"任天堂とディー・エヌ・エーを各1,000株保有",                                     reward:{div:0.01}, cond:()=>byName(["任天堂","ディー・エヌ・エー"])},
+ {id:"c_mitsui",     cat:"コラボ", name:"三井財閥の再興",     desc:"三井不動産・三井物産・三井化学・三井金属・三井住友FG・三井住友トラストを各1,000株保有", reward:{div:0.02}, cond:()=>byName(["三井不動産","三井物産","三井化学","三井金属","三井住友FG","三井住友トラスト"])},
+ {id:"c_mitsubishi", cat:"コラボ", name:"三菱グループの野望", desc:"「三菱」と名のつく全銘柄を各1,000株保有",                                       reward:{div:0.02}, cond:()=>byMatch(nm=>nm.includes("三菱"))},
+ {id:"c_title",      cat:"コラボ", name:"きみはおくりびと",   desc:"キヤノン・三菱商事・パナソニックHD・オリンパス・クボタ・リクルートHD・日立製作所・トヨタ自動車を各1,000株保有(頭文字)", reward:{inc:0.05}, cond:()=>byName(["キヤノン","三菱商事","パナソニックHD","オリンパス","クボタ","リクルートHD","日立製作所","トヨタ自動車"])},
+ {id:"c_auto",       cat:"コラボ", name:"モビリティの覇者",   desc:"「自動車」セクターの全銘柄を各1,000株保有",                                     reward:{inc:0.02}, cond:()=>bySector(["自動車"])},
+ {id:"c_bank",       cat:"コラボ", name:"金融王",             desc:"「銀行」セクターの全銘柄を各1,000株保有",                                       reward:{inc:0.02}, cond:()=>bySector(["銀行"])},
+ {id:"c_infra",      cat:"コラボ", name:"インフラを握る者",   desc:"エネルギー・通信・鉄道セクターの全銘柄を各1,000株保有",                         reward:{inc:0.03}, cond:()=>bySector(["エネルギー","通信","鉄道"])},
 ];
+/* コラボ実績の判定ヘルパー(銘柄名インデックスは事前計算してキャッシュ) */
+const NAME_IDX={};
+STOCKS.forEach((st,i)=>{ NAME_IDX[st.name]=i; });
+function byName(names){ return names.every(nm=>S.owned[NAME_IDX[nm]]>=1000); }
+function byMatch(f){ return STOCKS.every((st,i)=>!f(st.name) || S.owned[i]>=1000); }
+function bySector(secs){ return STOCKS.every((st,i)=>!secs.includes(st.sector) || S.owned[i]>=1000); }
 /* ── 銘柄別実績:全225銘柄×4段階(500/1000/5000/10000株)=900実績 ── */
 const STOCK_TIERS=[
-  [500,   "500株",  0.01],
-  [1000,  "1000株", 0.02],
-  [5000,  "5000株", 0.03],
-  [10000, "1万株",  0.05],
+  [500,   "500株",  0.001],
+  [1000,  "1000株", 0.002],
+  [5000,  "5000株", 0.003],
+  [10000, "1万株",  0.005],
 ];
 const ACH_STOCK=[];
 STOCKS.forEach((st,i)=>{
   STOCK_TIERS.forEach(([sh,lab,rw])=>{
     ACH_STOCK.push({
-      id:`s${i}_${sh}`, stock:i, tier:lab, cat:"銘柄別",
+      id:`s${i}_${sh}`, stock:i, sh, tier:lab, cat:"銘柄別",
       name:`${st.name} ${lab}主`,
       desc:`「${st.disp}」を${sh.toLocaleString()}株保有する`,
       reward:{div:rw},
@@ -1293,9 +1385,9 @@ function achSellM(){ return 1+achSum("sell"); }
 function achCount(){ let c=0; for(const a of ACH_ALL) if(S.ach[a.id]) c++; return c; }
 function rewardText(a){
   const p=[];
-  if(a.reward.div)  p.push(`配当+${Math.round(a.reward.div*100)}%`);
-  if(a.reward.inc)  p.push(`全収入+${Math.round(a.reward.inc*100)}%`);
-  if(a.reward.sell) p.push(`利確ボーナス+${Math.round(a.reward.sell*100)}%`);
+  if(a.reward.div)  p.push(`配当+${(a.reward.div*100).toFixed(1)}%`);
+  if(a.reward.inc)  p.push(`全収入+${(a.reward.inc*100).toFixed(1)}%`);
+  if(a.reward.sell) p.push(`利確ボーナス+${(a.reward.sell*100).toFixed(1)}%`);
   return p.join(" ");
 }
 
@@ -1313,16 +1405,18 @@ function concentrationRisk(){
   return [0, 0.5, 0.4, 0.3, 0.2, 0.1][k];
 }
 function divMultGlobal(){
-  let m=1;
-  for(const u of UPGRADES) if(S.upg[u.id] && u.type==="div") m*=scaleBoost(u.v);
+  // 【インフレ抑制】強化ショップの配当UPは加算で合計してから乗算する
+  let add=0;
+  for(const u of UPGRADES) if(S.upg[u.id] && u.type==="div") add+=scaleBoost(u.v)-1;
+  let m=1+add;
   const dsyn=bestOf("divsyn"); if(dsyn) m*=1 + ownedStockCount()*dsyn;  // 分散投資の妙
   m*=1+diversifyBonus();                                    // 分散投資ボーナス(配当+銘柄種類数%)
-  return m*eyeBonus()*eyeDivMult()*eyeIncomeMult()*achDivM()*achIncM();   // 相場眼＆実績バフ
+  return m*eyeBonus()*eyeDivMult()*eyeIncomeMult()*achDivM()*achIncM()*inagoIncomeMult();   // カテゴリ間のみ乗算
 }
 function stockDps(i){
   if(!S.owned[i]) return 0;
   // 配当は1株あたりdiv。表示・支払いとも10秒あたりの額
-  let d = effDiv(i) * S.owned[i] * divMultGlobal();
+  let d = effDiv(i) * S.owned[i] * divMultGlobal() / 20;   // 毎秒配当(旧10秒あたり額の1/20)
   const b=S.buff[i]; if(Date.now()<b.until) d*=b.rate;
   // 決算による配当変動を適用（永続的）
   d*=S.earnings[i].divMult;
@@ -1335,12 +1429,12 @@ function stockDps(i){
 function totalDps(){ let t=0; for(let i=0;i<STOCKS.length;i++) t+=stockDps(i); return t; }
 // 自動売買機能：強化ショップで「自動売買システム起動」を取得するまで作動しない
 function autoTradeUnlocked(){ return hasType("atunlock"); }
-function atLotMult(){ let m=1; for(const u of UPGRADES) if(S.upg[u.id] && u.type==="atlot") m*=scaleBoost(u.v); return m; }
-function atSpeedMult(){ let m=1; for(const u of UPGRADES) if(S.upg[u.id] && u.type==="atspeed") m*=scaleBoost(u.v); return m*eyeAlgoMult(); }
-function atMarginMult(){ let m=1; for(const u of UPGRADES) if(S.upg[u.id] && u.type==="atmargin") m*=scaleBoost(u.v); return m; }
+function atLotMult(){ let a=0; for(const u of UPGRADES) if(S.upg[u.id] && u.type==="atlot") a+=scaleBoost(u.v)-1; return 1+a; }      // 加算
+function atSpeedMult(){ let a=0; for(const u of UPGRADES) if(S.upg[u.id] && u.type==="atspeed") a+=scaleBoost(u.v)-1; return (1+a)*eyeAlgoMult()*inagoSpeedMult(); }   // 加算(カテゴリ間は乗算)
+function atMarginMult(){ let a=0; for(const u of UPGRADES) if(S.upg[u.id] && u.type==="atmargin") a+=scaleBoost(u.v)-1; return 1+a; } // 加算
 // デイトレ購入割引(padbuy)・売却上乗せ(padsell)。descの%をそのまま適用
-function padBuyDisc(){ let m=1; for(const u of UPGRADES) if(S.upg[u.id] && u.type==="padbuy") m*=u.v; return m; }
-function padSellUp(){ let m=1; for(const u of UPGRADES) if(S.upg[u.id] && u.type==="padsell") m*=u.v; return m; }
+function padBuyDisc(){ let cut=0; for(const u of UPGRADES) if(S.upg[u.id] && u.type==="padbuy") cut+=1-u.v; return Math.max(0.5, 1-cut); }   // 割引率は加算(下限50%)
+function padSellUp(){ let a=0; for(const u of UPGRADES) if(S.upg[u.id] && u.type==="padsell") a+=u.v-1; return 1+a; }   // 加算
 // 株価(1株あたりの時価)。買値と売値は同一
 function stockPrice(i){ return STOCKS[i].base * S.mult[i]; }
 function buyCost(i){ return stockPrice(i)*eyeStockDiscM(); }
@@ -1355,13 +1449,13 @@ function totalEquity(){
   if(typeof nikkei==="number") t+=S.zaraStock*nikkei;
   return t;
 }
-function prestigeGain(){ return Math.max(0, Math.floor(Math.sqrt(S.lifetime/1e8)) - 0); }
+function prestigeGain(){ return Math.max(0, Math.floor(Math.pow(S.lifetime/1e8, 0.4)) - 0); }   // √→0.4乗:周回を重ねるほど要求額が厳しくなる
 
 /* ════════════════════════ 表示ユーティリティ ════════════════════════ */
 const UNITS=[[1e60,"那由他"],[1e56,"阿僧祇"],[1e52,"恒河沙"],[1e48,"極"],[1e44,"載"],[1e40,"正"],[1e36,"澗"],[1e32,"溝"],[1e28,"穣"],[1e24,"秭"],[1e20,"垓"],[1e16,"京"],[1e12,"兆"],[1e8,"億"],[1e4,"万"]];
 function fmt(n){
   n=Math.floor(n);
-  for(const [v,u] of UNITS) if(n>=v) return (n/v).toFixed(2)+u;
+  for(const [v,u] of UNITS) if(n>=v) return (n/v).toFixed(1)+u;   // 小数点以下第1位に統一
   return n.toLocaleString();
 }
 const yen = n=>"¥"+fmt(n);
@@ -1435,7 +1529,13 @@ function bindHoldRow(btn, fn){
   btn.addEventListener("pointerdown", ()=>{
     fired=false;
     stopTimers();
-    delay=setTimeout(()=>{ fired=true; fn(); timer=setInterval(fn, padRepeatMs()); }, 300);
+    delay=setTimeout(()=>{
+      fired=true; fn();
+      timer=setInterval(()=>{
+        if(mOverlay.style.display==="flex"){ stopTimers(); return; }   // モーダル表示中は連続売買を停止
+        fn();
+      }, padRepeatMs());
+    }, 300);
   });
   btn.addEventListener("pointerup", ()=>{ if(!fired) fn(); stopTimers(); });
   ["pointerleave","pointercancel"].forEach(ev=>btn.addEventListener(ev, stopTimers));
@@ -1461,10 +1561,10 @@ function createRow(i){
         <span>平均取得 <b data-avg>─</b></span>
       </div>
       <div class="st-meta">
-        <span>配当 <b data-div>¥0</b>/10s</span>
+        <span>配当 <b data-div>¥0</b>/秒</span>
       </div>
       <div class="st-meta">
-        <span style="color:var(--dim)">(予想+<span data-divest>¥0</span>/10s)</span>
+        <span style="color:var(--dim)">(予想+<span data-divest>¥0</span>/秒)</span>
       </div>
     </div>
     <div class="st-right">
@@ -1494,13 +1594,11 @@ let sectorF="";                   // 業種フィルタ
 let hiDivF=false;                 // 高配当(利回り4%以上)フィルタ
 let sortMode="unlock";            // ソート(unlock/code/price/yield/owned/kana)
 let sortAsc=true;                 // 昇順/降順
-let scrollBack=0;                 // 最新窓からの遡り量(銘柄格納の巻き物式スクロール)
 
 function cmpCode(a,b){ return STOCKS[a].code<STOCKS[b].code ? -1 : STOCKS[a].code>STOCKS[b].code ? 1 : 0; }
 
 function setOwnedFilter(v){
   ownedFilter=v;
-  scrollBack=0;
   document.getElementById("subAll").classList.toggle("on", !v);
   document.getElementById("subHeld").classList.toggle("on", v);
   layoutBoard();
@@ -1509,104 +1607,74 @@ function setOwnedFilter(v){
 document.getElementById("subAll").onclick=()=>setOwnedFilter(false);
 document.getElementById("subHeld").onclick=()=>setOwnedFilter(true);
 
-// 行の配置(解禁・検索・フィルタ・ソート・保有切替の変更時に呼ぶ)
+// 銘柄ごとの含み損益(未保有は0)。含み益順ソートで使用
+function rowPL(i){ return S.owned[i]>0 && S.avgCost[i]>0 ? (stockPrice(i)-S.avgCost[i])*S.owned[i] : 0; }
+
+// 行の配置(解禁・検索・フィルタ・ソート・保有切替の変更時に呼ぶ)。
+// 銘柄格納は廃止:解禁済みの全銘柄を常に一覧表示する
 function layoutBoard(){
   const revealed=revealedCount();
   for(let i=0;i<revealed;i++) if(!rowEls[i]) rowEls[i]=createRow(i);
-  const scrollUpHead=document.getElementById("scrollUpHead");
-  const scrollDownHead=document.getElementById("scrollDownHead");
-  // 検索・フィルタ・ソートのいずれかが有効なら一覧表示、素の状態なら銘柄格納つき窓表示
-  const flat = ownedFilter || !!searchQ || !!sectorF || hiDivF || sortMode!=="unlock" || !sortAsc;
-
-  // 表示中のフロート文字を除去してから再配置する。
-  // (行をDOMに差し直すとCSSアニメーションが最初から再生され、
-  //  新規上場スクロール完了時に「◯株購入」が二度浮き出てしまうため)
+  // 表示中のフロート文字を除去してから再配置する(DOM差し直しでアニメが再生し直されるのを防ぐ)
   activeBody.querySelectorAll(".pad-float").forEach(e=>e.remove());
   activeBody.innerHTML="";
   const frag=document.createDocumentFragment();
-
-  if(!flat){
-    /* ── 通常:銘柄格納つきの窓表示(最新10銘柄・▲▼で3銘柄ずつ遡る) ── */
-    const baseStart=Math.max(0, revealed-VISIBLE_WINDOW);
-    scrollBack=Math.max(0, Math.min(scrollBack, baseStart));
-    const winStart=baseStart-scrollBack;
-    const winEnd=Math.min(revealed, winStart+VISIBLE_WINDOW);
-    displayedIdx=[];
-    for(let i=winStart;i<winEnd;i++){ displayedIdx.push(i); frag.appendChild(rowEls[i]); }
-    activeBody.appendChild(frag);
-    if(winStart>0){ scrollUpHead.style.display=""; scrollUpHead.textContent=`▲ 上の3銘柄を表示(上に${winStart}銘柄)`; }
-    else scrollUpHead.style.display="none";
-    const hiddenBelow=revealed-winEnd;
-    if(hiddenBelow>0){ scrollDownHead.style.display=""; scrollDownHead.textContent=`▼ 下の3銘柄を表示(下に${hiddenBelow}銘柄)`; }
-    else scrollDownHead.style.display="none";
-    if(revealed<STOCKS.length){
-      const next=STOCKS[revealed-1];
-      resultHint.innerHTML=`▼ <b>${next.disp}</b> を100株購入すると次の銘柄が上場(残り ${STOCKS.length-revealed} 銘柄)`;
-    } else {
-      resultHint.innerHTML=`日経225 全銘柄が上場済み ─ 兜町のすべてが、あなたの盤上にある`;
-    }
-    document.getElementById("boardCount").textContent=`日経225 / 解禁 ${revealed}銘柄`;
-  } else {
-    /* ── 絞り込み・ソート時:解禁済み銘柄からの一覧表示 ── */
-    scrollUpHead.style.display="none";
-    scrollDownHead.style.display="none";
-    const idx=[];
-    for(let i=0;i<revealed;i++){
-      if(ownedFilter && !(S.owned[i]>0)) continue;
-      if(searchQ && SEARCH_KEY[i].indexOf(searchQ)===-1) continue;
-      if(sectorF && STOCKS[i].sector!==sectorF) continue;
-      if(hiDivF && effYield(i)<0.04) continue;
-      idx.push(i);
-    }
-    switch(sortMode){
-      case "price": idx.sort((a,b)=>stockPrice(a)-stockPrice(b) || cmpCode(a,b)); break;
-      case "yield": idx.sort((a,b)=>effYield(a)-effYield(b) || cmpCode(a,b)); break;
-      case "owned": idx.sort((a,b)=>S.owned[a]-S.owned[b] || cmpCode(a,b)); break;
-      case "kana":  idx.sort((a,b)=>STOCKS[a].name.localeCompare(STOCKS[b].name,"ja") || cmpCode(a,b)); break;
-      case "code":  idx.sort(cmpCode); break;
-      default:      break;   // unlock=解禁順(配列順のまま)
-    }
-    if(!sortAsc) idx.reverse();
-    displayedIdx=idx;
-    for(const i of idx) frag.appendChild(rowEls[i]);
-    activeBody.appendChild(frag);
-    resultHint.innerHTML = idx.length===0
-      ? "条件に一致する銘柄がありません ─ 検索・フィルタを見直してください"
-      : `絞り込み中:<b>${idx.length}銘柄</b> を表示(解禁済み ${revealed}銘柄から)`;
-    document.getElementById("boardCount").textContent=`表示 ${idx.length}/解禁${revealed}`;
+  const idx=[];
+  for(let i=0;i<revealed;i++){
+    if(ownedFilter && !(S.owned[i]>0)) continue;
+    if(searchQ && SEARCH_KEY[i].indexOf(searchQ)===-1) continue;
+    if(sectorF && STOCKS[i].sector!==sectorF) continue;
+    if(hiDivF && effYield(i)<0.04) continue;
+    idx.push(i);
   }
+  switch(sortMode){
+    case "price": idx.sort((a,b)=>stockPrice(a)-stockPrice(b) || cmpCode(a,b)); break;
+    case "yield": idx.sort((a,b)=>effYield(a)-effYield(b) || cmpCode(a,b)); break;
+    case "owned": idx.sort((a,b)=>S.owned[a]-S.owned[b] || cmpCode(a,b)); break;
+    case "pl":    idx.sort((a,b)=>rowPL(a)-rowPL(b) || cmpCode(a,b)); break;
+    case "kana":  idx.sort((a,b)=>STOCKS[a].name.localeCompare(STOCKS[b].name,"ja") || cmpCode(a,b)); break;
+    case "code":  idx.sort(cmpCode); break;
+    default:      break;   // unlock=解禁順(配列順のまま)
+  }
+  if(!sortAsc) idx.reverse();
+  displayedIdx=idx;
+  for(const i of idx) frag.appendChild(rowEls[i]);
+  activeBody.appendChild(frag);
+
+  const filtered = ownedFilter || !!searchQ || !!sectorF || hiDivF || sortMode!=="unlock" || !sortAsc;
+  if(idx.length===0){
+    resultHint.innerHTML="条件に一致する銘柄がありません ─ 検索・フィルタを見直してください";
+  } else if(filtered){
+    resultHint.innerHTML=`絞り込み中:<b>${idx.length}銘柄</b> を表示(解禁済み ${revealed}銘柄から)`;
+  } else if(revealed<STOCKS.length){
+    const next=STOCKS[revealed-1];
+    resultHint.innerHTML=`▼ <b>${next.disp}</b> を100株購入すると次の銘柄が上場(残り ${STOCKS.length-revealed} 銘柄)`;
+  } else {
+    resultHint.innerHTML=`日経225 全銘柄が上場済み ─ 兜町のすべてが、あなたの盤上にある`;
+  }
+  document.getElementById("boardCount").textContent =
+    filtered ? `表示 ${idx.length}/解禁${revealed}` : `日経225 / 解禁 ${revealed}銘柄`;
   // 表示直後に先頭の行だけ即時更新(残りはIntersectionObserverが追従)
   const now=Date.now();
   for(let k=0;k<Math.min(displayedIdx.length,12);k++) updateRow(displayedIdx[k], rowEls[displayedIdx[k]], now);
 }
 
-/* ── 新規上場の演出:新しい銘柄が下から0.5秒かけてグイッとスクロールして現れる ── */
-let unlockAnimating=false;
+/* ── 新規上場の演出:新しい銘柄行が下から0.5秒かけてグイッとせり上がって現れる ── */
 function animateUnlock(newIdx){
-  const flat = ownedFilter || !!searchQ || !!sectorF || hiDivF || sortMode!=="unlock" || !sortAsc;
-  // 銘柄ページの通常窓表示以外(絞り込み中・遡り中・別ページ)は即時更新
-  if(unlockAnimating || curPage!=="board" || flat || scrollBack>0){ layoutBoard(); return; }
-  unlockAnimating=true;
-  if(!rowEls[newIdx]) rowEls[newIdx]=createRow(newIdx);
+  layoutBoard();   // 新銘柄を含めて即時配置
+  const filtered = ownedFilter || !!searchQ || !!sectorF || hiDivF || sortMode!=="unlock" || !sortAsc;
+  if(curPage!=="board" || filtered) return;
   const row=rowEls[newIdx];
-  activeBody.appendChild(row);                      // いったん窓の下に追加して…
-  const h=row.offsetHeight||187;
-  activeBody.style.transition="none";
-  activeBody.style.transform="translateY(0)";
-  void activeBody.offsetWidth;                      // リフロー強制
-  activeBody.style.transition="transform .5s cubic-bezier(.22,.9,.3,1)";
-  activeBody.style.transform=`translateY(${-h}px)`; // …1行ぶん上へグイッとスクロール
-  let fin=false;
-  const done=()=>{
-    if(fin) return;
-    fin=true;
-    unlockAnimating=false;
-    activeBody.style.transition="none";
-    activeBody.style.transform="";
-    layoutBoard();                                  // 最終的な窓に確定
-  };
-  activeBody.addEventListener("transitionend", done, {once:true});
-  setTimeout(done, 600);                            // transitionendが来ない場合の保険
+  if(!row || !row.isConnected) return;
+  row.style.transition="none";
+  row.style.transform="translateY(70px)";
+  row.style.opacity="0";
+  void row.offsetWidth;                             // リフロー強制
+  row.style.transition="transform .5s cubic-bezier(.22,.9,.3,1), opacity .5s ease-out";
+  row.style.transform="";
+  row.style.opacity="";
+  row.scrollIntoView({behavior:"smooth", block:"center"});   // 新銘柄までグイッとスクロール
+  setTimeout(()=>{ row.style.transition=""; }, 600);
 }
 
 /* 検索・フィルタ・ソートのUI配線 */
@@ -1615,7 +1683,7 @@ function animateUnlock(newIdx){
   let timer=null;
   searchBox.addEventListener("input", ()=>{
     clearTimeout(timer);
-    timer=setTimeout(()=>{ searchQ=norm(searchBox.value.trim()); scrollBack=0; layoutBoard(); },150);
+    timer=setTimeout(()=>{ searchQ=norm(searchBox.value.trim()); layoutBoard(); },150);
   });
   const sectorSel=document.getElementById("sectorSel");
   const sectors=[...new Set(STOCKS.map(x=>x.sector))];
@@ -1628,15 +1696,21 @@ function animateUnlock(newIdx){
   const dirLabel=()=>{ sortDirBtn.textContent = sortAsc ? "▲昇順" : "▼降順"; sortDirBtn.classList.toggle("on", !sortAsc); };
   sortSel.onchange=()=>{
     sortMode=sortSel.value;
-    sortAsc = !(sortMode==="price"||sortMode==="yield"||sortMode==="owned");   // 数値系は降順スタート
+    sortAsc = !(sortMode==="price"||sortMode==="yield"||sortMode==="owned"||sortMode==="pl");   // 数値系は降順スタート
     dirLabel();
     sortSel.classList.toggle("active", sortMode!=="unlock");
     layoutBoard();
   };
   sortDirBtn.onclick=()=>{ sortAsc=!sortAsc; dirLabel(); layoutBoard(); };
-  // 銘柄格納(▲▼で3銘柄ずつスクロール)
-  document.getElementById("scrollUpHead").onclick=()=>{ scrollBack+=3; layoutBoard(); };
-  document.getElementById("scrollDownHead").onclick=()=>{ scrollBack=Math.max(0,scrollBack-3); layoutBoard(); };
+  // 検索・フィルタ・ソートを初期状態に戻す
+  document.getElementById("resetFilterBtn").onclick=()=>{
+    searchBox.value=""; searchQ="";
+    sectorF=""; sectorSel.value=""; sectorSel.classList.remove("active");
+    hiDivF=false; hiDivBtn.classList.remove("on");
+    sortMode="unlock"; sortSel.value="unlock"; sortSel.classList.remove("active");
+    sortAsc=true; dirLabel();
+    setOwnedFilter(false);   // 保有株フィルタも解除(内部でlayoutBoardが走る)
+  };
 })();
 
 // 行の値更新(表示中かつ画面内の行だけ)
@@ -1681,7 +1755,7 @@ function updateRow(i, r, now){
 
   const sigB=r.querySelector("[data-sigbuy]"), sigS=r.querySelector("[data-sigsell]");
   if(S.mult[i]<=0.85){sigB.textContent="◎買い場"; sigB.className="st-signal sig-slot sig-buy"; sigS.textContent=""; sigS.className="st-signal sig-slot";}
-  else if(S.mult[i]>=1.25 && S.owned[i]>0){sigS.textContent="◎売り時"; sigS.className="st-signal sig-slot sig-sell"; sigB.textContent=""; sigB.className="st-signal sig-slot";}
+  else if(S.mult[i]>=1.25 && S.owned[i]>0 && S.avgCost[i]>0 && stockPrice(i)>S.avgCost[i]){sigS.textContent="◎利確チャンス"; sigS.className="st-signal sig-slot sig-sell"; sigB.textContent=""; sigB.className="st-signal sig-slot";}
   else {sigB.textContent=""; sigB.className="st-signal sig-slot"; sigS.textContent=""; sigS.className="st-signal sig-slot";}
 
   const bf=r.querySelector("[data-buff]");
@@ -1783,11 +1857,14 @@ function openVote(i){
       closeModal();
       if(S.owned[i]<30000 || S.voteUsed[i]) return;
       S.voteUsed[i]=true;
+      S.voteCount=(S.voteCount||0)+1;   // 累計行使回数(成功・失敗どちらも消費＝カウント)
       if(Math.random()*100<rate){
         S.voteBonus[i]=(S.voteBonus[i]||0)+pt/100;
         log(`議決権行使に成功! ${STOCKS[i].disp} の利回り +${pt}%`, true);
+        openModal({title:"■ 可決 ■", msg:`議決権行使に成功！\n\n「${STOCKS[i].disp}」の増配議案が可決された。\n配当利回り +${pt}% → 現在 ${(effYield(i)*100).toFixed(1)}%`, ok:"OK"});
       } else {
         log(`議決権行使は失敗… ${STOCKS[i].disp} の増配議案は否決`, true);
+        openModal({title:"■ 否決 ■", msg:`議決権行使は失敗…\n\n「${STOCKS[i].disp}」の増配議案は否決された。\n(この銘柄の議決権は消費された)`, ok:"OK"});
       }
       renderAll();
     };
@@ -1848,19 +1925,79 @@ function renderEyeShop(){
   document.getElementById("eyeOwnedCount").textContent=`${owned}/${EYE_ITEMS.length} 取得`;
   document.getElementById("eyesUpg").textContent=S.eyes;
 }
-/* ショップ内サブタブ(強化/相場眼)の切替 */
-document.getElementById("shopTabUpg").onclick=()=>{
-  document.getElementById("upgPane").style.display="";
-  document.getElementById("eyePane").style.display="none";
-  document.getElementById("shopTabUpg").classList.add("on");
-  document.getElementById("shopTabEye").classList.remove("on");
-};
-document.getElementById("shopTabEye").onclick=()=>{
-  document.getElementById("upgPane").style.display="none";
-  document.getElementById("eyePane").style.display="";
-  document.getElementById("shopTabEye").classList.add("on");
-  document.getElementById("shopTabUpg").classList.remove("on");
-};
+/* ── イナゴショップ:イナゴチップスを消費する特別ショップ ── */
+const INAGO_ITEMS=[
+  {id:"i_time",  cost:2,  name:"タイムリープ",        desc:"1時間分の配当を即座に獲得(消費型)"},
+  {id:"i_fund",  cost:3,  name:"イナゴファンド出資",  desc:"現在の総資産の10%の現金を獲得(消費型)"},
+  {id:"i_eye",   cost:5,  name:"相場眼のひらめき",    desc:"相場眼を5獲得(消費型)"},
+  {id:"i_gold",  cost:8,  name:"黄金のイナゴ像",      desc:"全収入 +10%(永続・何体でも購入可・効果は加算)", stack:true},
+  {id:"i_finger",cost:12, name:"デイトレ神の指サック",desc:"自動売買の速度 ×1.5(永続・1回のみ)", once:true},
+];
+function inagoIncomeMult(){ return 1 + 0.10*((S.inagoShop&&S.inagoShop.g)||0); }   // 黄金像は加算で積む
+function inagoSpeedMult(){ return (S.inagoShop&&S.inagoShop.f) ? 1.5 : 1; }
+const inagoGrid=document.getElementById("inagoGrid");
+function buildInagoShop(){
+  inagoGrid.innerHTML="";
+  INAGO_ITEMS.forEach(it=>{
+    const d=document.createElement("div");
+    d.className="upg eye-item"; d.id="inago_"+it.id;
+    d.innerHTML=`<div class="upg-name">${it.name}</div><div class="upg-cost">イナゴ ×${it.cost}</div><div class="upg-desc">${it.desc}</div>`;
+    d.onclick=()=>buyInago(it);
+    inagoGrid.appendChild(d);
+  });
+}
+function buyInago(it){
+  if(it.once && S.inagoShop.f) return;
+  if(S.inagoChips<it.cost) return;
+  openModal({
+    title:"イナゴショップ",
+    msg:`「${it.name}」をイナゴチップス ×${it.cost} で購入しますか?\n${it.desc}`,
+    ok:"購入する", cancel:"やめる",
+    onOk:()=>{
+      if(S.inagoChips<it.cost) return;
+      if(it.once && S.inagoShop.f) return;
+      S.inagoChips-=it.cost;
+      let got="";
+      if(it.id==="i_time"){ const amt=totalDps()*3600; gain(amt); got=`1時間分の配当 ${yen(amt)} を獲得`; }
+      else if(it.id==="i_fund"){ const amt=(S.money+totalEquity())*0.10; S.money+=amt; got=`${yen(amt)} を獲得`; }
+      else if(it.id==="i_eye"){ S.eyes+=5; got="相場眼 ×5 を獲得"; }
+      else if(it.id==="i_gold"){ S.inagoShop.g=(S.inagoShop.g||0)+1; got=`全収入 +10%(現在 ${S.inagoShop.g}体・計+${S.inagoShop.g*10}%)`; }
+      else if(it.id==="i_finger"){ S.inagoShop.f=true; got="自動売買の速度 ×1.5"; }
+      log(`イナゴショップ:${it.name} ─ ${got}`, true);
+      openModal({title:"購入完了!", msg:`「${it.name}」\n${got}`, ok:"閉じる"});
+      renderAll();
+    },
+  });
+}
+function renderInagoShop(){
+  INAGO_ITEMS.forEach(it=>{
+    const d=document.getElementById("inago_"+it.id);
+    if(!d) return;
+    const soldout = !!(it.once && S.inagoShop.f);
+    d.classList.toggle("bought", soldout);
+    d.classList.toggle("cant", !soldout && S.inagoChips<it.cost);
+    d.querySelector(".upg-cost").textContent =
+      soldout ? "取得済" :
+      it.stack ? `イナゴ ×${it.cost}(所持 ${S.inagoShop.g||0}体)` :
+      `イナゴ ×${it.cost}`;
+  });
+  document.getElementById("inagoChipsCount").textContent=`×${S.inagoChips}`;
+  document.getElementById("chipsInago").textContent=`×${S.inagoChips}`;
+  document.getElementById("chipsUpg").textContent=S.inagoChips;
+}
+
+/* ショップ内サブタブ(強化/相場眼/イナゴ)の切替 */
+function showShopPane(which){
+  const panes={upg:"upgPane", eye:"eyePane", inago:"inagoPane"};
+  const tabs ={upg:"shopTabUpg", eye:"shopTabEye", inago:"shopTabInago"};
+  for(const k in panes){
+    document.getElementById(panes[k]).style.display = k===which ? "" : "none";
+    document.getElementById(tabs[k]).classList.toggle("on", k===which);
+  }
+}
+document.getElementById("shopTabUpg").onclick=()=>showShopPane("upg");
+document.getElementById("shopTabEye").onclick=()=>showShopPane("eye");
+document.getElementById("shopTabInago").onclick=()=>showShopPane("inago");
 
 /* ？？？で隠す高額強化(1億円以上)。総資産1億超えで3件ずつ公開 */
 const HIDDEN_LIST = UPGRADES.filter(u=>u.cost>=1e8);          // コスト昇順(配列がソート済み)
@@ -1943,7 +2080,7 @@ function buildAch(){
   ACH.forEach(a=>{
     const d=document.createElement("div");
     d.className="tile"; d.dataset.aid=a.id;
-    d.innerHTML=`<span class="t-main">${a.name}</span><span class="t-sub">${a.cat}</span><span class="t-new" style="display:none;">NEW</span>`;
+    d.innerHTML=`<span class="t-main">${a.name}</span><span class="t-sub">${a.cat}</span><span class="t-new" style="display:none;">達成</span>`;
     tileEls[a.id]=d; fm.appendChild(d);
   });
   achGridMain.appendChild(fm);
@@ -1953,7 +2090,7 @@ function buildAch(){
   ACH_STOCK.forEach(a=>{
     const d=document.createElement("div");
     d.className="tile"; d.dataset.aid=a.id;
-    d.innerHTML=`<span class="t-main">？？？</span><span class="t-sub">？？？</span><span class="t-new" style="display:none;">NEW</span>`;
+    d.innerHTML=`<span class="t-main">？？？</span><span class="t-sub">？？？</span><span class="t-new" style="display:none;">達成</span>`;
     tileEls[a.id]=d; fs.appendChild(d);
   });
   achGridStock.appendChild(fs);
@@ -1967,26 +2104,59 @@ function buildAch(){
       return;
     }
     const got=!!S.ach[a.id];
+    if(got && !S.achClaimed[a.id]){
+      // 達成マーク付き:報酬を受領して達成マークを消す
+      const r=claimAch(a);
+      openModal({
+        title:"実績報酬を受領!",
+        msg:`「${a.name}」\n\n■ 獲得\n現金 ${yen(r.cash)}\nイナゴチップス ×${r.chips}\n\n■ 永続バフ(達成時から発動済み)\n${rewardText(a)}`,
+        ok:"閉じる",
+      });
+      log(`実績報酬を受領「${a.name}」 ─ ${yen(r.cash)} ＋ イナゴチップス×${r.chips}`, true);
+      renderAll(); if(curPage==="ach") renderAch();
+      return;
+    }
     openModal({
       title:(got?"【達成済】":"【未達成】")+a.name,
-      msg:`■ 解除条件\n${a.desc}\n\n■ 報酬(永続バフ)\n${rewardText(a)}${got?"\n\n※達成済み。バブル崩壊後も効果は消えない":""}`,
+      msg:`■ 解除条件\n${a.desc}\n\n■ 報酬(永続バフ)\n${rewardText(a)}${got?"\n\n※受領済み。バブル崩壊後も効果は消えない":""}`,
       ok:"閉じる",
-      onOk:()=>{   // 説明を閉じたら、そのタイルのNEWバッジを既読化
-        if(S.achNew[a.id]){
-          delete S.achNew[a.id];
-          const d2=tileEls[a.id];
-          if(d2) d2.querySelector(".t-new").style.display="none";
-          renderAchBadge();   // タブの未読数も更新
-        }
-      },
     });
   };
   achGridMain.onclick=tap;
   achGridStock.onclick=tap;
 }
-/* タブバーの「実績」バッジ:未読(NEW)の件数を表示 */
+/* ── 実績報酬の受領(現金＋イナゴチップス)。永続バフ自体は達成時点で発動済み ── */
+function achChips(a){   // 難易度に応じて1〜5枚
+  if(a.stock!==undefined) return {500:1, 1000:2, 5000:3, 10000:5}[a.sh]||1;
+  const r=(a.reward.div||0)+(a.reward.inc||0)+(a.reward.sell||0);
+  return r>=0.05?5 : r>=0.02?4 : r>=0.01?3 : r>=0.005?2 : 1;
+}
+function achCash(a){    // 現金報酬:生涯収入の1%×難易度(最低1万円)
+  return Math.max(10000, Math.round(S.lifetime*0.01*achChips(a)));
+}
+function claimAch(a){
+  if(!S.ach[a.id] || S.achClaimed[a.id]) return null;
+  const cash=achCash(a), chips=achChips(a);
+  S.achClaimed[a.id]=true;
+  S.money+=cash;
+  S.inagoChips+=chips;
+  return {cash, chips};
+}
+document.getElementById("claimAllBtn").onclick=()=>{
+  let cash=0, chips=0, cnt=0;
+  for(const a of ACH_ALL){
+    const r=claimAch(a);
+    if(r){ cash+=r.cash; chips+=r.chips; cnt++; }
+  }
+  if(cnt===0){ openModal({title:"実績報酬", msg:"いま受け取れる報酬はありません", ok:"閉じる"}); return; }
+  openModal({title:"実績報酬を一括受領!", msg:`${cnt}件の実績報酬を受け取った。\n\n■ 獲得\n現金 ${yen(cash)}\nイナゴチップス ×${chips}`, ok:"閉じる"});
+  log(`実績報酬を一括受領:${cnt}件 ─ ${yen(cash)} ＋ イナゴチップス×${chips}`, true);
+  renderAll(); if(curPage==="ach") renderAch();
+};
+/* タブバーの「実績」バッジ:未受領の報酬数を表示 */
 function renderAchBadge(){
-  const unseen=Object.keys(S.achNew||{}).length;
+  let unseen=0;
+  for(const a of ACH_ALL) if(S.ach[a.id] && !S.achClaimed[a.id]) unseen++;
   const tc=document.getElementById("achTabCount");
   tc.textContent = unseen>0 ? String(unseen) : "";
   tc.classList.toggle("show", unseen>0);
@@ -1999,7 +2169,7 @@ function renderAch(){
     const got=!!S.ach[a.id];
     if(got) cnt++;
     d.classList.toggle("got", got);
-    d.querySelector(".t-new").style.display = S.achNew[a.id] ? "" : "none";
+    d.querySelector(".t-new").style.display = (got && !S.achClaimed[a.id]) ? "" : "none";
     // 銘柄別実績:上場済みになったら実名を表示、初期化や崩壊で戻ったら？？？に伏せ直す
     if(a.stock!==undefined){
       const rev = a.stock<revealed;
@@ -2015,10 +2185,10 @@ function renderAch(){
     }
   }
   document.getElementById("achCount").textContent=`${cnt}/${ACH_ALL.length} 達成`;
-  const dv=Math.round(achSum("div")*100), ic=Math.round(achSum("inc")*100), sl=Math.round(achSum("sell")*100);
+  const dv=(achSum("div")*100).toFixed(1), ic=(achSum("inc")*100).toFixed(1), sl=(achSum("sell")*100).toFixed(1);
   document.getElementById("achSummary").innerHTML =
-    `実績を達成すると<b>永続バフ</b>を獲得(バブル崩壊後も消えません)。タイルをタップで詳細表示。<br>`+
-    `現在の実績バフ合計 ─ 配当<b>+${dv}%</b> ／ 全収入<b>+${ic}%</b> ／ 利確ボーナス<b>+${sl}%</b>`;
+    `実績を達成すると<b>永続バフ</b>が自動発動。「達成」マークのタイルをタップすると<b>現金＋イナゴチップス</b>を受領できる。<br>`+
+    `実績バフ合計 ─ 配当<b>+${dv}%</b> ／ 全収入<b>+${ic}%</b> ／ 利確ボーナス<b>+${sl}%</b> ｜ 所持イナゴチップス <b>×${S.inagoChips}</b>`;
   renderAchBadge();
 }
 function checkAch(){
@@ -2029,8 +2199,7 @@ function checkAch(){
     let ok=false;
     try{ ok=a.cond(); }catch(e){}
     if(ok){
-      S.ach[a.id]=true;
-      S.achNew[a.id]=true;   // NEWバッジ(実績タブを離れるまで表示)
+      S.ach[a.id]=true;      // バフは達成時点で自動発動。報酬(現金＋チップス)はタイルから受領
       hit=true;
       log(`実績解除「${a.name}」 ─ ${rewardText(a)}`, true);
     }
@@ -2041,8 +2210,9 @@ function checkAch(){
 /* ════════════════════════ タブページ切替 ════════════════════════ */
 const PAGE_IDS=["assets","pad","board","upg","ach","prestige"];
 let curPage="assets";   // 起動時は資産画面
+const pageScroll={};   // ページごとのスクロール位置(タブを戻ったとき復元)
 function showPage(p){
-  if(curPage==="ach" && p!=="ach"){ S.achNew={}; renderAchBadge(); }   // 実績タブを離れたらNEWを既読化
+  pageScroll[curPage]=window.scrollY;
   curPage=p;
   for(const id of PAGE_IDS)
     document.getElementById("page-"+id).classList.toggle("active", id===p);
@@ -2060,6 +2230,7 @@ function showPage(p){
   fitBottomBar();
   if(p==="pad") requestAnimationFrame(drawPad);          // 表示後にサイズ確定してから描画
   if(p==="assets"){ requestAnimationFrame(drawAssetChart); renderBuffs(); }
+  requestAnimationFrame(()=>window.scrollTo(0, pageScroll[p]||0));   // スクロール位置を復元
   if(p==="board") fitBoardHead();
   if(p==="ach") renderAch();
 }
@@ -2070,18 +2241,10 @@ document.querySelectorAll("#tabbar .tabbtn").forEach(b=>
 let boardQty=100;  // 銘柄ボードの売買単位。デフォルトは日本株の単元に合わせ100株
 function boardBuyQty(i){ return boardQty==="all" ? Math.floor(S.money/buyCost(i)) : boardQty; }
 function boardSellQty(i){ return boardQty==="all" ? S.owned[i] : (S.owned[i]>0 ? Math.min(boardQty,S.owned[i]) : boardQty); }
-// 単位候補:×1000は1,000株保有・×10000は10,000株保有の到達で自動解放
-function boardQtyCycle(){
-  const c=[1,10,100];
-  if(S.unit1k)  c.push(1000);
-  if(S.unit10k) c.push(10000);
-  c.push("all");
-  return c;
-}
-document.getElementById("boardQtyBtn").onclick=()=>{
-  const c=boardQtyCycle();
-  boardQty = c[(c.indexOf(boardQty)+1) % c.length];
-  document.getElementById("boardQtyBtn").textContent = boardQty==="all" ? "単位:全売買" : `単位×${boardQty}株`;
+// 売買単位:プルダウンで最初から全単位を選択可能(条件解放は廃止)
+document.getElementById("boardQtySel").onchange=()=>{
+  const v=document.getElementById("boardQtySel").value;
+  boardQty = v==="all" ? "all" : parseInt(v,10);
   renderBoard();
 };
 function buy(i){
@@ -2092,13 +2255,20 @@ function buy(i){
   S.money-=c;
   // 平均取得単価を更新
   S.avgCost[i] = (S.avgCost[i]*S.owned[i] + c) / (S.owned[i]+q);
-  if(S.owned[i]===0) S.divNext[i]=Date.now()+10000;  // 購入タイミングから10秒カウント開始
+  if(S.owned[i]===0) S.divNext[i]=Date.now()+1000;  // 購入タイミングから1秒カウント開始
   S.owned[i]+=q;
   boardFloat(i, `${fmt(q)}株購入`, "buy");
   log(`【約定】${STOCKS[i].disp} <span class="up">${fmt(q)}株 買い</span> @${yen(c/q)} ／ 代金 ${yen(c)}`, false, true);
-  // 売買単位の解放(1,000株/10,000株到達で単位ボタンに追加)
-  if(!S.unit1k && S.owned[i]>=1000){ S.unit1k=true; log("売買単位「×1000株」が解放された", true); }
-  if(!S.unit10k && S.owned[i]>=10000){ S.unit10k=true; log("売買単位「×10000株」が解放された", true); }
+  // 議決権の解放通知(30,000株到達の瞬間・銘柄ごとに一度だけ大きく表示)
+  if(S.owned[i]>=30000 && !S.voteNoted[i]){
+    S.voteNoted[i]=true;
+    openModal({
+      title:"議決権 解放!",
+      msg:`「${STOCKS[i].disp}」の議決権が行使可能になりました！\n\n銘柄行の「議決権」ボタンから、株主総会での増配チャレンジに挑戦できる(銘柄ごとに一度きり)。`,
+      ok:"OK",
+    });
+    log(`「${STOCKS[i].disp}」の議決権が行使可能に!`, true);
+  }
   // 段階的解放:一番下の銘柄を100株買うと次の銘柄が上場
   const rev=revealedCount();
   if(i===rev-1 && S.owned[i]>=100 && rev<STOCKS.length){
@@ -2190,11 +2360,42 @@ function padDowntrend(){
 // 売却系の強化・バフはすべて「利確時の利益分」にのみボーナスとして乗るため、
 // 株価が実際に上がらない限り、買って売るだけでは1円も増えない。
 function profitBoostMult(){
-  return atMarginMult()*padSellUp()*eyeSellMult()*achSellM()*eyeIncomeMult()*achIncM();
+  return atMarginMult()*padSellUp()*eyeSellMult()*achSellM()*eyeIncomeMult()*achIncM()*inagoIncomeMult();
 }
 function padPrices(){
   const unit = nikkei*atLotMult()*padBuyDisc()*eyeBuyDiscM();
-  return {buy:unit, sell:unit};
+  let buy=unit, sell=unit;
+  if(golden && Date.now()<golden.until){
+    if(golden.type==="bargain") buy*=0.5;    // 暴落バーゲン祭:購入額 半額
+    else                        sell*=2;     // 高騰バブル祭:売却額 2倍
+  }
+  return {buy, sell};
+}
+
+/* ── ゴールデンタイム:稀に10秒間だけ発動するデイトレボーナス ── */
+let golden=null;   // {type:"bargain"|"bubble", until}
+function startGolden(){
+  if(golden) return;
+  const bubble=Math.random()<0.5;
+  golden={type:bubble?"bubble":"bargain", until:Date.now()+10000};
+  const name=bubble?"高騰バブル祭(売却額2倍)":"暴落バーゲン祭(購入額半額)";
+  log(`【ゴールデンタイム】${name} 発動! 10秒間`, true);
+  renderGolden(); updatePadBtns();
+}
+function renderGolden(){
+  const bar=document.getElementById("goldenBar");
+  const pad=document.getElementById("goldenPad");
+  if(golden && Date.now()<golden.until){
+    const rem=Math.max(0, Math.ceil((golden.until-Date.now())/1000));
+    const txt = golden.type==="bargain"
+      ? `★暴落バーゲン祭★ 購入額 半額! 残り${rem}秒`
+      : `★高騰バブル祭★ 売却額 2倍! 残り${rem}秒`;
+    bar.textContent=txt; bar.className=golden.type; bar.style.display="";
+    pad.textContent=txt; pad.className=golden.type; pad.style.display="";
+  } else {
+    bar.style.display="none";
+    pad.style.display="none";
+  }
 }
 /* デイトレの売買単位(1/10/100株/"all"=全売買) */
 let padQty=1;
@@ -2235,6 +2436,7 @@ function padDoBuy(q, silent){
   S.zaraAvg = (S.zaraAvg*S.zaraStock + cost) / (S.zaraStock+q);  // 平均取得単価更新
   S.zaraStock+=q;
   S.padTrades++;
+  if(!silent && !golden && Math.random()<0.002) startGolden();
   if(!silent) log(`【約定】日経225 <span class="up">${fmt(q)}株 買い</span> @${yen(buy)} ／ 代金 ${yen(cost)} ／ 保有 ${fmt(S.zaraStock)}株`);
   return true;
 }
@@ -2253,6 +2455,7 @@ function padDoSell(q, silent){
   S.money+=g; S.zaraStock-=q;
   S.padTrades++;
   if(S.zaraStock<1) S.zaraAvg=0;
+  if(!silent && !golden && Math.random()<0.002) startGolden();
   if(!silent) log(`【約定】日経225 <span class="down">${fmt(q)}株 売り</span> @${yen(sell)} ／ 代金 ${yen(g)} ／ 実現損益 <span class="${pl>=0?"up":"down"}">${pl>=0?"+":"−"}${yen(Math.abs(pl))}</span>`);
   return true;
 }
@@ -2434,19 +2637,57 @@ function drawPad(){
 /* ════════════════════════ 相場変動・ニュース ════════════════════════ */
 let riskTickN=0;   // 集中投資リスクの判定カウンタ(2秒×15=30秒ごと)
 let newsHist=[];   // ニュース履歴(直近20件)
-function pushNews(t){
+function pushNews(t, sectors){
   if(t.indexOf("<")===-1) t=decorateLog(t);   // ティッカー由来のプレーン文も色分け
   const ts=new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"});
-  newsHist.unshift(`[${ts}] ${t}`);
+  newsHist.unshift({t:`[${ts}] ${t}`, sectors:sectors&&sectors.length?sectors:null});
   if(newsHist.length>20) newsHist.pop();
 }
-/* ティッカー(資産ページ)と画面下のニュース欄、どちらをタップしても履歴モーダル */
-function openNewsHist(){
+/* ニュースに関連する業種の解禁済み銘柄一覧を表示 */
+function openSectorStocks(sectors){
+  const revealed=revealedCount();
+  const lines=[];
+  for(let i=0;i<revealed;i++){
+    if(!sectors.includes(STOCKS[i].sector)) continue;
+    lines.push(`${STOCKS[i].disp} ─ ${yen(stockPrice(i))}${S.owned[i]>0?` ／ 保有 ${fmt(S.owned[i])}株`:""}`);
+  }
   openModal({
-    title:"ニュース・イベント履歴(直近20件)",
-    msgHtml:newsHist.length ? newsHist.join("\n\n") : "まだニュースはありません",
+    title:`関連銘柄:${sectors.join("・")}`,
+    msg:lines.length ? lines.join("\n") : "該当する業種の銘柄はまだ上場していません",
     ok:"閉じる",
   });
+}
+/* ── 製作者用の隠しデバッグコマンド ──
+   転生ページ「■ セーブデータ」見出しの「タ」を2秒以内に5連打すると発動:
+   総資産1京円＋全銘柄の即時解放(誤爆防止のため単発タップでは何も起きない) */
+let debugTapN=0, debugTapT=0;
+document.getElementById("debugTap").onclick=()=>{
+  const now=Date.now();
+  if(now-debugTapT>2000) debugTapN=0;   // 2秒空いたらカウントをリセット
+  debugTapT=now;
+  if(++debugTapN<5) return;
+  debugTapN=0;
+  S.money=1e16;                                  // 1京円
+  S.unlocked=STOCKS.length;                      // 全225銘柄を解放
+  S.maxUnlocked=STOCKS.length;                   // 実績タイルの伏せ字も全公開
+  layoutBoard();
+  log("【DEBUG】総資産1京円・全銘柄解放", true);
+  renderAll(); if(curPage==="ach") renderAch();
+};
+
+/* ティッカー(資産ページ)と画面下のニュース欄、どちらをタップしても履歴モーダル */
+function openNewsHist(){
+  const html = newsHist.length
+    ? newsHist.map((n,k)=>`<div class="news-item${n.sectors?" has-sec":""}" data-k="${k}">${n.t}${n.sectors?` <span class="ni-hint">▶関連銘柄</span>`:""}</div>`).join("")
+    : "まだニュースはありません";
+  openModal({title:"ニュース・イベント履歴(直近20件)", msgHtml:html, ok:"閉じる"});
+  // ニュース項目タップ→関連業種の解禁済み銘柄一覧
+  mMsg.onclick=(e)=>{
+    const it=e.target.closest(".news-item.has-sec");
+    if(!it) return;
+    const n=newsHist[+it.dataset.k];
+    if(n && n.sectors) openSectorStocks(n.sectors);
+  };
 }
 document.querySelector(".ticker").onclick=openNewsHist;
 document.getElementById("log").onclick=openNewsHist;
@@ -2508,7 +2749,7 @@ function fireNews(){
   const tk=document.getElementById("ticker");
   tk.textContent=`【速報】${n.t} ─ 対象:${n.sectors.join("・")}(30秒間 配当${n.good?"+50%":"-30%"})`;
   tk.style.animation="none"; void tk.offsetWidth; tk.style.animation="";
-  pushNews(tk.textContent);
+  pushNews(tk.textContent, n.sectors);
   log(`ニュース:${n.t}`, true);
   renderAll();
 }
@@ -2548,7 +2789,7 @@ function fireEarnings(){
   const tk=document.getElementById("ticker");
   tk.textContent=`【決算速報】本日 ${picked.length} 企業が決算発表 ─ ${labels.slice(0,3).join("・")}${picked.length>3?"...":""}`;
   tk.style.animation="none"; void tk.offsetWidth; tk.style.animation="";
-  pushNews(tk.textContent);
+  pushNews(tk.textContent, [...new Set(picked.map(x=>STOCKS[x.i!==undefined?x.i:x].sector))]);
   log(`${picked.length}社が決算発表`, true);
   renderAll();
 }
@@ -2563,8 +2804,10 @@ document.getElementById("prestigeBtn").onclick=()=>{
     ok:"崩壊させる", cancel:"やめる",
     onOk:()=>{
       const eyes=S.eyes+g, pr=S.prestiges+1, rev=S.upgReveal||0, es=S.eyeShop||{}, ach=S.ach||{}, seen=S.achSeen||0;
+      const clm=S.achClaimed||{}, chips=S.inagoChips||0, ish=S.inagoShop||{g:0,f:false}, vc=S.voteCount||0;   // 受領状況・チップス・イナゴ商品・議決権回数も引き継ぐ
       const mu=Math.max(S.maxUnlocked||0, S.unlocked||0);   // 実績タイルの伏せ字解除は崩壊後も維持
       S=newState(); S.eyes=eyes; S.prestiges=pr; S.upgReveal=rev; S.eyeShop=es; S.ach=ach; S.achSeen=seen;
+      S.achClaimed=clm; S.inagoChips=chips; S.inagoShop=ish; S.voteCount=vc;
       S.maxUnlocked=Math.max(mu, INITIAL_VISIBLE);  // ？？？公開・相場眼ショップ・実績は引き継ぐ
       if(hasEye("e_seed")) S.money=1e7;
       recalcAchSums();   // 大口機関の後ろ盾:開始資金¥1,000万
@@ -2576,13 +2819,14 @@ document.getElementById("prestigeBtn").onclick=()=>{
   });
 };
 /* How to play(遊び方)モーダル */
-document.getElementById("howtoBtn").onclick=()=>{
+function showHowto(){
   openModal({
     title:"How to play ─ 億り人への道",
-    msg:"きみの元手は¥100万。ここから総資産¥1億──「億り人」を目指す。\n\n【1. デイトレで軍資金を作る】\n「デイトレ」タブで日経225を安く買って高く売る。売却額が平均取得額を上回れば実現損益が積み上がる。利確チャンス・ナンピンチャンスの光るボタンが合図だ。\n\n【2. 配当で寝ていても稼ぐ】\n「銘柄」タブで個別銘柄を買い集めると10秒ごとに配当が入り続ける。一番下の銘柄を100株買うと次の銘柄が新規上場。検索・業種フィルタ・ソートも使える。\n\n【3. 強化と実績で加速する】\n稼いだ金は「強化」タブで再投資。さらに「実績」を達成すると崩壊後も消えない永続バフが手に入る。一つの銘柄を買い込むほど配当は強くなる。\n\n【4. そして、バブル崩壊へ】\n総資産¥1億を超えたら「転生」タブでバブルを崩壊できる。すべてを失う代わりに「相場眼」を獲得し、全収入の永続強化と相場眼ショップの強力なバフで、次の周回はさらに速くなる。\n\n稼ぎ、増やし、崩壊させ、また稼ぐ。相場の頂で会おう。",
+    msg:"きみの元手は¥100万。ここから総資産¥1億──「億り人」を目指す。\n\n【1. デイトレで軍資金を作る】\n「デイトレ」タブで日経225を安く買って高く売る。売却額が平均取得額を上回れば実現損益が積み上がる。利確チャンス・ナンピンチャンスの光るボタンが合図だ。\n\n【2. 配当で寝ていても稼ぐ】\n「銘柄」タブで個別銘柄を買い集めると毎秒配当が入り続ける。一番下の銘柄を100株買うと次の銘柄が新規上場。検索・業種フィルタ・ソートも使える。\n\n【3. 強化と実績で加速する】\n稼いだ金は「強化」タブで再投資。さらに「実績」を達成すると崩壊後も消えない永続バフが手に入る。一つの銘柄を買い込むほど配当は強くなる。\n\n【4. そして、バブル崩壊へ】\n総資産¥1億を超えたら「転生」タブでバブルを崩壊できる。すべてを失う代わりに「相場眼」を獲得し、全収入の永続強化と相場眼ショップの強力なバフで、次の周回はさらに速くなる。\n\n稼ぎ、増やし、崩壊させ、また稼ぐ。相場の頂で会おう。",
     ok:"閉じる",
   });
-};
+}
+document.getElementById("howtoBtn").onclick=showHowto;
 /* プレステージの説明モーダル */
 document.getElementById("prestigeInfoBtn").onclick=()=>{
   openModal({
@@ -2595,7 +2839,6 @@ function resetBoardDOM(){
   if(rowIO) rowIO.disconnect();
   visRows.clear();
   rowEls.length=0;
-  scrollBack=0;
   ownedFilter=false;
   document.getElementById("subAll").classList.add("on");
   document.getElementById("subHeld").classList.remove("on");
@@ -2610,6 +2853,7 @@ const mText=document.getElementById("mText");
 const mOk=document.getElementById("mOk"), mCancel=document.getElementById("mCancel");
 function openModal(opt){
   mTitle.textContent=opt.title||"";
+  mMsg.onclick=null;   // 前のモーダルのタップ配線を解除
   if(opt.msgHtml) mMsg.innerHTML=opt.msgHtml;   // ニュース履歴など色付き表示用
   else mMsg.textContent=opt.msg||"";
   const mOpts=document.getElementById("mOpts");
@@ -2710,8 +2954,11 @@ let lastEquity=0, lastHeaderH=0;
 function fitBoardHead(){
   const hh=document.getElementById("topbar").offsetHeight;
   if(hh!==lastHeaderH){
-    document.getElementById("boardHead").style.top=(hh-1)+"px";
+    const bh=document.getElementById("boardHead");
+    bh.style.top=(hh-1)+"px";
     document.getElementById("shopHead").style.top=(hh-1)+"px";
+    // 検索・フィルタ・ソート欄はboardHeadの直下に固定
+    document.querySelector(".board-controls").style.top=(hh-1+bh.offsetHeight)+"px";
     lastHeaderH=hh;
   }
 }
@@ -2722,11 +2969,11 @@ function fitNum(el, str, max, min){
   el.style.fontSize=(len<=9 ? max : Math.max(min, max*9/len))+"px";
 }
 /* ── 資産推移の記録(5秒サンプリング・最大2880点=約4時間) ── */
-let assetHist=[];
+
 let assetRange=240;   // 表示点数(60=5分/240=20分/720=1時間/0=全部)
 function sampleAsset(){
-  assetHist.push(S.money+totalEquity());
-  if(assetHist.length>2880) assetHist.shift();
+  S.assetHist.push(S.money+totalEquity());
+  if(S.assetHist.length>2880) S.assetHist.shift();
 }
 document.querySelectorAll("#assetRangeBtns .qty-btn").forEach(b=>{
   b.addEventListener("click", ()=>{
@@ -2742,7 +2989,7 @@ function drawAssetChart(){
   if(cv.width!==w||cv.height!==h){cv.width=w; cv.height=h;}
   const ctx=cv.getContext("2d");
   ctx.clearRect(0,0,w,h);
-  const d = assetRange>0 ? assetHist.slice(-assetRange) : assetHist.slice();
+  const d = assetRange>0 ? S.assetHist.slice(-assetRange) : S.assetHist.slice();
   if(d.length<2){
     ctx.fillStyle="#6E7A73"; ctx.font="11px 'IBM Plex Mono',monospace";
     ctx.fillText("集計中…(5秒ごとに記録)", 10, 22);
@@ -2859,7 +3106,7 @@ function renderHeader(){
   lastEquity=eq;
   document.getElementById("statOwnedKinds").textContent=`${ownedStockCount()}/${STOCKS.length}銘柄`;
   document.getElementById("statOwnedShares").textContent=fmt(totalOwnedShares())+"株";
-  document.getElementById("statDps").textContent=yen(totalDps())+"/10s";
+  document.getElementById("statDps").textContent=yen(totalDps())+"/秒";
   document.getElementById("statZara").textContent = S.zaraStock>0
     ? `${fmt(S.zaraStock)}株(平均${yen(S.zaraAvg)})`
     : "0株";
@@ -2881,7 +3128,7 @@ function renderBuffs(){
   const dsyn=bestOf("divsyn"); if(dsyn) upDiv*=1+ownedStockCount()*dsyn;   // 分散投資の妙(divMultGlobalと同じ式)
   const eyeRate=Math.round(Math.max(0.08,bestOf("eyeboost")||0.08)*100);
   const eyeShopM=eyeDivMult()*eyeIncomeMult();
-  const achDv=Math.round(achSum("div")*100), achIc=Math.round(achSum("inc")*100);
+  const achDv=(achSum("div")*100).toFixed(1), achIc=(achSum("inc")*100).toFixed(1);
   const disc=padBuyDisc()*eyeBuyDiscM();
   const voteN=S.voteBonus.reduce((a,b)=>a+(b>0?1:0),0);
   const votePt=Math.round(S.voteBonus.reduce((a,b)=>a+b,0)*100);
@@ -2901,13 +3148,14 @@ function renderBuffs(){
   if(hasType("padspeed"))       rows.push(`連続売買間隔 <b>0.08秒</b>(短縮済み)`);
   if(contra>1)                  rows.push(`逆張り(ナンピン購入時)<b>×${scaleBoost(contra).toFixed(2)}</b>`);
   if(trend>1)                   rows.push(`順張り(上昇中の配当)<b>×${scaleBoost(trend).toFixed(2)}</b>`);
+  if(inagoIncomeMult()>1.0001)  rows.push(`黄金のイナゴ像 <b>${S.inagoShop.g}体</b>(全収入 +${S.inagoShop.g*10}%)`);
   if(voteN>0)                   rows.push(`議決権行使済み <b>${voteN}銘柄</b>(利回り上乗せ合計 +${votePt}%)`);
   el.innerHTML = rows.length
     ? rows.join("<br>")
     : "まだ有効なバフはない ─ 強化・実績・分散投資などで獲得すると、ここに並んでいく";
 }
 function renderAll(){
-  renderHeader(); renderBoard(); renderUpgs(); renderEyeShop();
+  renderHeader(); renderBoard(); renderUpgs(); renderEyeShop(); renderInagoShop();
   renderAchBadge();
   if(curPage==="ach") renderAch();
   if(curPage==="assets") renderBuffs();
@@ -2940,7 +3188,9 @@ document.addEventListener("contextmenu", e=>{
 /* ════════════════════════ メインループ ════════════════════════ */
 let assetTickN=0;
 const loaded=autoLoad();   // 自動セーブがあれば復元
-layoutBoard(); buildUpgs(); buildEyeShop(); buildAch(); renderAll(); renderClock(); fitBottomBar();
+layoutBoard(); buildUpgs(); buildEyeShop(); buildInagoShop(); buildAch(); renderAll(); renderClock(); fitBottomBar();
+// 初回プレイ時はHow to playを自動で開く
+if(S.firstPlay){ S.firstPlay=false; showHowto(); }
 sampleAsset();             // 資産推移の起点を記録
 showPage("assets");        // 起動時は資産ページ
 if(loaded) log("自動セーブから復元しました", true);
@@ -2952,19 +3202,27 @@ setInterval(autoSave, 1000);
 window.addEventListener("beforeunload", autoSave);
 document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="hidden") autoSave(); });
 
-setInterval(()=>{           // 1秒ティック:配当・自動売買・実績判定
-  // 配当:銘柄ごとに購入時刻を起点とした10秒サイクルで、表示額(/10s)をそのまま支払う
+setInterval(()=>{           // 1秒ティック:配当・自動売買・実績判定・ゴールデンタイム
+  // ゴールデンタイム:終了判定と稀な自然発動(平均3〜4分に1回)
+  if(golden && Date.now()>=golden.until){
+    golden=null;
+    log("【ゴールデンタイム】終了", true);
+    updatePadBtns();
+  }
+  if(!golden && Math.random()<0.005) startGolden();
+  renderGolden();
+  // 配当:銘柄ごとに購入時刻を起点とした1秒サイクルで、表示額(/秒)をそのまま支払う
   const now=Date.now();
   for(let i=0;i<STOCKS.length;i++){
     if(!S.owned[i]) continue;
-    if(!S.divNext[i]) S.divNext[i]=now+10000;
+    if(!S.divNext[i]) S.divNext[i]=now+1000;
     let guard=0;
-    while(now>=S.divNext[i] && guard<2880){   // 離席分もまとめて精算(最大8時間)
+    while(now>=S.divNext[i] && guard<28800){   // 離席分もまとめて精算(最大8時間)
       gain(stockDps(i));
-      S.divNext[i]+=10000;
+      S.divNext[i]+=1000;
       guard++;
     }
-    if(guard>=2880) S.divNext[i]=now+10000;
+    if(guard>=28800) S.divNext[i]=now+1000;
   }
 
   // 自動売買機能：強化ショップで「自動売買システム起動」を取得するまでオフ
