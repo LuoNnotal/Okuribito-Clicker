@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<!-- GitHub Pagesのキャッシュ対策:常に再検証させ、古いバージョンの滞留を防ぐ -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>キミは億り人になれるか？</title>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -300,6 +304,31 @@
   .qty-btn:active{background:rgba(255,179,0,.15);}
   .qty-btn.on{background:rgba(255,179,0,.22); color:#FFD24D;}
   .qty-btn.danger{color:var(--up); border-color:#7a2b2b;}
+
+  /* ══ チュートリアル(初回ガイド・スポットライト式) ══ */
+  .tut-block{position:fixed; background:rgba(0,0,0,.68); z-index:68; touch-action:none;}
+  #tutHoleBlock{position:fixed; z-index:68; background:transparent; touch-action:none;}
+  #tutRing{
+    position:fixed; z-index:68; pointer-events:none; box-sizing:border-box;
+    border:2px solid var(--amber); border-radius:10px;
+    box-shadow:0 0 14px rgba(255,179,0,.55), inset 0 0 10px rgba(255,179,0,.25);
+    animation:tutPulse 1.1s ease-in-out infinite;
+  }
+  #tutRing.waiting{border-style:dashed; animation:none; opacity:.55; box-shadow:none;}
+  @keyframes tutPulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.04);opacity:.72;}}
+  #tutMsg{
+    position:fixed; left:12px; right:12px; z-index:69;
+    background:#130E04; border:1px solid var(--amber); border-radius:8px;
+    padding:12px 14px; color:var(--text); font-size:13px; line-height:1.8;
+    font-family:var(--font-disp);
+    box-shadow:0 0 18px rgba(255,179,0,.35);
+  }
+  #tutMsg .tut-head{color:var(--amber); font-size:11px; letter-spacing:.14em; margin-bottom:6px;}
+  #tutMsg b{color:var(--amber);}
+  #tutMsg .tut-ok{display:block; width:100%; margin-top:10px; padding:10px 0; font-size:14px;}
+  #tutMsg .tut-skip{margin-top:8px; text-align:right; font-size:11px; color:var(--dim); text-decoration:underline; cursor:pointer;}
+  #tutMsg .tut-live{display:inline-block; margin-top:4px; color:var(--up); font-family:var(--font-num); font-size:12px;}
+  body.tut-lock{overflow:hidden;}
 
   /* ══ バージョン履歴(転生ページ) ══ */
   .ver-list{padding:10px 12px; font-size:11px; line-height:1.7; color:var(--dim);}
@@ -691,8 +720,14 @@
   </section>
 
   <section>
-    <div class="sec-head"><span>■ バージョン履歴</span><span class="r">現在 <b>v3.1.0</b></span></div>
+    <div class="sec-head"><span>■ バージョン履歴</span><span class="r">現在 <b id="verNow">v3.3.0</b></span></div>
     <div class="ver-list">
+      <div class="v-row"><span class="v-num">v3.3.0</span><span class="v-date">2026/07/17</span><br>
+        キャッシュ対策とバージョン自動更新を導入。起動時に前回プレイ時のバージョンと比較し、更新を検知したら ?v= 付きURLへ自動遷移してキャッシュを破棄・最新版を強制読み込み(セーブデータはそのまま引き継ぎ)。キャッシュ無効化のmetaタグも追加。さらに起動1.5秒後にサーバー上の現物ファイルとバージョンをオンライン照合し、公開直後の更新も即時検知して自動更新する。</div>
+      <div class="v-row"><span class="v-num">v3.2.0</span><span class="v-date">2026/07/16</span><br>
+        デイトレ・銘柄ページの初回表示に、実際にボタンを押して進めるスポットライト式チュートリアルを追加。「購入→配当が毎秒振り込まれる様子を観察→含み益を待つ→利確」の流れを体験でき、含み損の間は誤タップ防止で売却を一時ロックし、3秒待っても含み益にならないときは相場がそっと助け舟を出す。銘柄側は買い直し後に「配当をもらい続けるのもアリ」まで案内。既存セーブは取引経験に応じて自動スキップ。あわせて、新規上場と同時に購入したとき「◯株購入」の浮き文字が消えてしまう不具合を修正(浮き文字を出してから0.2秒後にスライド演出を開始)。</div>
+      <div class="v-row"><span class="v-num">v3.1.1</span><span class="v-date">2026/07/15</span><br>
+        初期解放を10銘柄→1銘柄に変更。最初の1銘柄を100株買い集めるところから億り人への道が始まる。</div>
       <div class="v-row"><span class="v-num">v3.1.0</span><span class="v-date">2026/07/12</span><br>
         配当を「10秒ごと」から「毎秒振込」に一新。デイトレに10秒限定の「ゴールデンタイム」(暴落バーゲン祭/高騰バブル祭)が稀に発生。売買単位のプルダウン化、タブ間のスクロール位置保持、フィルタのリセットボタン、ニュースから関連銘柄一覧の表示、シグナルを「利確チャンス」(含み益＋高騰の両立時のみ)に変更。議決権行使回数・銘柄コラボの実績13種を追加し、資産推移グラフを永続化。このバージョン履歴ページも追加。</div>
       <div class="v-row"><span class="v-num">v3.0.0</span><span class="v-date">2026/07/12</span><br>
@@ -757,6 +792,17 @@
 </div>
 
 <!-- 汎用モーダル(セーブ出力/読込/確認ダイアログ) -->
+<!-- ══ チュートリアル(スポットライト式・初回ガイド) ══ -->
+<div id="tutLayer" style="display:none;">
+  <div class="tut-block" id="tutBkT"></div>
+  <div class="tut-block" id="tutBkB"></div>
+  <div class="tut-block" id="tutBkL"></div>
+  <div class="tut-block" id="tutBkR"></div>
+  <div id="tutHoleBlock"></div>
+  <div id="tutRing"></div>
+  <div id="tutMsg"></div>
+</div>
+
 <div id="mOverlay">
   <div id="mBox">
     <div class="m-title" id="mTitle"></div>
@@ -772,6 +818,44 @@
 
 <script>
 "use strict";
+/* ════════════════════════ バージョン管理・キャッシュ対策 ════════════════════════ */
+const GAME_VERSION="v3.3.0";
+const VER_KEY="okuribito_version";   // 前回プレイ時のバージョン(セーブデータとは別キー・セーブは一切触らない)
+(function(){
+  try{
+    const last=localStorage.getItem(VER_KEY);
+    if(last!==GAME_VERSION){
+      // 先に現バージョンを記録してから遷移する(記録済みなら再突入しない=無限ループ防止その1)
+      localStorage.setItem(VER_KEY, GAME_VERSION);
+      const url=new URL(location.href);
+      // すでに ?v=現バージョン 付きURLなら遷移しない(localStorage不能環境でのループ防止その2)
+      if(url.searchParams.get("v")!==GAME_VERSION){
+        url.searchParams.set("v", GAME_VERSION);
+        location.replace(url.toString());   // キャッシュを破棄して最新ファイルを強制再取得
+        return;
+      }
+    }
+  }catch(e){}   // プライベートモード等でlocalStorage不可でも起動は続行
+})();
+// オンライン照合:サーバー上の最新ファイルからGAME_VERSIONを読み取って比較する。
+// キャッシュ経由で配信された古いHTMLの中の定数では更新を自力検知できないため、
+// no-storeの実フェッチでサーバーの現物を見に行くのが唯一確実な検知手段。
+async function checkLatestVersion(){
+  if(location.protocol!=="http:" && location.protocol!=="https:") return;   // file://等ローカル実行はスキップ
+  try{
+    const res=await fetch(location.pathname, {cache:"no-store"});
+    if(!res.ok) return;
+    const m=(await res.text()).match(/GAME_VERSION\s*=\s*"(v[\d.]+)"/);
+    if(!m || m[1]===GAME_VERSION) return;          // 取得失敗 or 既に最新なら何もしない
+    const url=new URL(location.href);
+    if(url.searchParams.get("v")===m[1]) return;   // 更新試行済みでも古いまま=CDN未反映。ループさせず次回に持ち越し
+    try{ autoSave(); }catch(e){}                   // 直前セーブ(セーブデータはそのまま引き継ぎ)
+    log(`新バージョン ${m[1]} を検知。最新版に更新します…`, true);
+    url.searchParams.set("v", m[1]);
+    location.replace(url.toString());              // キャッシュを迂回して最新版を強制読み込み
+  }catch(e){}   // オフライン等は黙って通常プレイ続行
+}
+setTimeout(checkLatestVersion, 1500);   // 起動処理が落ち着いてから1回だけ照合
 /* ════════════════════════ データ定義 ════════════════════════ */
 /* 日経225採用銘柄(2026.07時点)・配列は時価総額の概算が低い順。
    base(株価)とdiv(配当)は順位から自動算出するゲーム用の架空値。
@@ -1030,7 +1114,7 @@ const STOCKS = RAW.map((r,i)=>{
 });
 
 const SELL_RATE = 1.0;  // 売却レート100%(評価額そのままで売れる)
-const INITIAL_VISIBLE = 10;   // 最初から表示される銘柄数
+const INITIAL_VISIBLE = 1;    // 最初から表示される銘柄数(1銘柄からスタート)
 const VISIBLE_WINDOW  = 10;   // アクティブに表示する窓の幅
 const UNLOCK_STEP     = 1;    // 一番下を100株買うと解禁される数
 
@@ -1171,6 +1255,8 @@ function newState(){
     inagoShop:{g:0,f:false},          // イナゴショップ(g=黄金のイナゴ像の数, f=指サック)
     voteNoted:STOCKS.map(()=>false),  // 議決権解放モーダルを表示済みか
     firstPlay:true,                   // 初回プレイフラグ(How to playを自動表示)
+    tutPadDone:false,                 // デイトレページのチュートリアル完了フラグ
+    tutBoardDone:false,               // 銘柄ページのチュートリアル完了フラグ
     voteCount:0,                      // 議決権の累計行使回数(実績用)
     assetHist:[],                     // 資産推移グラフのデータ(リロードしても消えない)
     unlocked:INITIAL_VISIBLE,         // 解禁済み銘柄数(段階的解放)
@@ -1216,6 +1302,9 @@ function fixState(){
   while(S.voteNoted.length<n) S.voteNoted.push(false);
   S.voteNoted.length=n;
   if(S.firstPlay===undefined) S.firstPlay=false;   // 既存セーブには出さない
+  // チュートリアル:旧セーブは取引経験があれば見せない(経験に応じた自動スキップ)
+  if(S.tutPadDone===undefined)   S.tutPadDone   = S.padTrades>0;
+  if(S.tutBoardDone===undefined) S.tutBoardDone = S.owned.some(o=>o>0) || S.prestiges>0 || (S.unlocked||1)>1;
   if(S.voteCount===undefined) S.voteCount=0;
   if(!Array.isArray(S.assetHist)) S.assetHist=[];
   // 廃止済みの「100株保有」銘柄別実績を旧セーブから掃除
@@ -1615,8 +1704,13 @@ function rowPL(i){ return S.owned[i]>0 && S.avgCost[i]>0 ? (stockPrice(i)-S.avgC
 function layoutBoard(){
   const revealed=revealedCount();
   for(let i=0;i<revealed;i++) if(!rowEls[i]) rowEls[i]=createRow(i);
-  // 表示中のフロート文字を除去してから再配置する(DOM差し直しでアニメが再生し直されるのを防ぐ)
-  activeBody.querySelectorAll(".pad-float").forEach(e=>e.remove());
+  // 表示中のフロート文字は残り時間つきで持ち越す:DOM差し直しでCSSアニメが最初から
+  // 再生されるのを、経過時間分の負のanimation-delayで途中再開させて防ぐ(除去は各自の950msタイマーに任せる)
+  activeBody.querySelectorAll(".pad-float").forEach(e=>{
+    const age=Date.now()-(+e.dataset.born||0);
+    if(age>=900) e.remove();
+    else e.style.animationDelay=(-age)+"ms";
+  });
   activeBody.innerHTML="";
   const frag=document.createDocumentFragment();
   const idx=[];
@@ -2233,6 +2327,7 @@ function showPage(p){
   requestAnimationFrame(()=>window.scrollTo(0, pageScroll[p]||0));   // スクロール位置を復元
   if(p==="board") fitBoardHead();
   if(p==="ach") renderAch();
+  maybeStartTutorial(p);
 }
 document.querySelectorAll("#tabbar .tabbtn").forEach(b=>
   b.addEventListener("click", ()=>showPage(b.dataset.page)));
@@ -2258,6 +2353,7 @@ function buy(i){
   if(S.owned[i]===0) S.divNext[i]=Date.now()+1000;  // 購入タイミングから1秒カウント開始
   S.owned[i]+=q;
   boardFloat(i, `${fmt(q)}株購入`, "buy");
+  tutOnAction("boardbuy");
   log(`【約定】${STOCKS[i].disp} <span class="up">${fmt(q)}株 買い</span> @${yen(c/q)} ／ 代金 ${yen(c)}`, false, true);
   // 議決権の解放通知(30,000株到達の瞬間・銘柄ごとに一度だけ大きく表示)
   if(S.owned[i]>=30000 && !S.voteNoted[i]){
@@ -2274,8 +2370,12 @@ function buy(i){
   if(i===rev-1 && S.owned[i]>=100 && rev<STOCKS.length){
     S.unlocked=Math.min(STOCKS.length, rev+UNLOCK_STEP);
     S.maxUnlocked=Math.max(S.maxUnlocked||0, S.unlocked);
-    animateUnlock(rev);
-    log(`新規上場! ${STOCKS[rev].disp} が解禁`, true);
+    // 「◯株購入」の浮き文字を先に見せてから、0.2秒後に新規上場のスライド演出を開始する
+    // (同時実行だとanimateUnlock→layoutBoardのDOM再構築で浮き文字が巻き込まれるため)
+    setTimeout(()=>{
+      animateUnlock(rev);
+      log(`新規上場! ${STOCKS[rev].disp} が解禁`, true);
+    }, 200);
   }
   renderAll();
 }
@@ -2287,6 +2387,7 @@ function boardFloat(i, txt, side){
   const el=document.createElement("div");
   el.className="pad-float "+side;
   el.textContent=txt;
+  el.dataset.born=Date.now();   // レイアウト再構築時に負のdelayで途中再開するための生成時刻
   // 押したボタン(買/売)自身の位置から浮き上がらせる
   const btn=row.querySelector(side==="buy" ? "[data-buy]" : "[data-sell]");
   if(btn){
@@ -2303,6 +2404,7 @@ function sell(i){
   if(S.owned[i]<1) return;
   const q=boardSellQty(i);
   boardFloat(i, `${fmt(q)}株売却`, "sell");
+  tutOnAction("boardsell");
   const unit=sellGain(i), g=unit*q;
   const pl=(unit - S.avgCost[i]) * q;
   S.realized += pl;                        // 実現損益を記録
@@ -2438,6 +2540,7 @@ function padDoBuy(q, silent){
   S.padTrades++;
   if(!silent && !golden && Math.random()<0.002) startGolden();
   if(!silent) log(`【約定】日経225 <span class="up">${fmt(q)}株 買い</span> @${yen(buy)} ／ 代金 ${yen(cost)} ／ 保有 ${fmt(S.zaraStock)}株`);
+  if(!silent) tutOnAction("padbuy");
   return true;
 }
 function padDoSell(q, silent){
@@ -2457,6 +2560,7 @@ function padDoSell(q, silent){
   if(S.zaraStock<1) S.zaraAvg=0;
   if(!silent && !golden && Math.random()<0.002) startGolden();
   if(!silent) log(`【約定】日経225 <span class="down">${fmt(q)}株 売り</span> @${yen(sell)} ／ 代金 ${yen(g)} ／ 実現損益 <span class="${pl>=0?"up":"down"}">${pl>=0?"+":"−"}${yen(Math.abs(pl))}</span>`);
+  if(!silent) tutOnAction("padsell");
   return true;
 }
 /* 長押しで連続売買(初期0.5秒間隔・強化で0.25秒) */
@@ -2871,6 +2975,187 @@ function openModal(opt){
 }
 function closeModal(){ mOverlay.style.display="none"; }
 
+/* ════════════════════════ チュートリアル(初回ガイド) ════════════════════════ */
+/* デイトレ/銘柄ページの初回表示時に発動するスポットライト式ガイド。
+   画面全体を4枚の遮蔽divで覆い、対象ボタンの矩形だけ「穴」を開けて実際にタップさせて進行する。
+   含み益待ちの間は透明ブロッカーで穴を塞ぎ、損切りの誤タップを防ぐ。
+   モーダル(z-index:70)より下に重ねるため、既存の通知類はチュートリアル中も最前面に出る。 */
+let tut=null;   // {kind, steps, idx, stock, raf, lastMsg}
+const tutEls={};
+function tutInit(){
+  if(tutEls.layer) return;
+  tutEls.layer=document.getElementById("tutLayer");
+  tutEls.bk=["tutBkT","tutBkB","tutBkL","tutBkR"].map(id=>document.getElementById(id));
+  tutEls.hole=document.getElementById("tutHoleBlock");
+  tutEls.ring=document.getElementById("tutRing");
+  tutEls.msg=document.getElementById("tutMsg");
+}
+function tutSteps(kind){
+  if(kind==="pad") return [
+    {target:()=>padBuyBtn, on:"padbuy",
+     msg:"ようこそ、デイトレの世界へ！<br>まずは<b>【購入】ボタン</b>をタップして、日経225を買ってみよう"},
+    {target:()=>padSellBtn, on:"padsell",
+     wait:()=>S.zaraStock>=1 && padPrices().sell>S.zaraAvg,
+     msgWait:"買った直後に売っても±0円。株価が上がって<b>含み益</b>が出るまで待とう…<br>(売却ボタンが赤い「＋」表示になったら利確のサイン)",
+     msg:"<b>利確チャンス！</b><br>今すぐ【売却】ボタンをタップして利益を確定しよう"},
+    {done:true, ok:"デイトレ開始！",
+     msg:"これがデイトレの基本、<b>「安く買って高く売る」</b>だ。<br>ボタン長押しで連続売買もできる。まずはここで軍資金を稼ごう！"},
+  ];
+  return [
+    {target:()=>tutRowBtn("[data-buy]"), on:"boardbuy",
+     msg:"ここは<b>個別銘柄</b>のページ。<br>【買】ボタンをタップして、記念すべき1銘柄目を購入しよう"},
+    {target:()=>document.getElementById("foot-board"), observe:5,
+     msg:"画面下の<b>【買付可能】</b>に注目！<br>株を保有している間は<b>毎秒配当金</b>が自動で振り込まれ、お金が少しずつ増えていく。<br><span id=\"tutDivLive\" class=\"tut-live\"></span>"},
+    {target:()=>tutRowBtn("[data-sell]"), on:"boardsell",
+     wait:()=>S.owned[tut.stock]>0 && (stockPrice(tut.stock)-S.avgCost[tut.stock])*S.owned[tut.stock]>=0.5,
+     msgWait:"株価が上がって【売】ボタンが赤い「＋」表示になるまで、配当を受け取りながら待とう…",
+     msg:"含み益が出た！<br><b>【売】ボタン</b>をタップして利確してみよう"},
+    {target:()=>tutRowBtn("[data-buy]"), on:"boardbuy",
+     msg:"最後に、もう一度<b>【買】ボタン</b>で買い直そう"},
+    {done:true, ok:"投資開始！",
+     msg:"売却益で稼ぐもよし、<b>売らずに配当金をもらい続けるもよし</b>。<br>この銘柄を100株集めると、次の銘柄が新規上場するぞ！"},
+  ];
+}
+function tutRowBtn(sel){
+  const r=rowEls[tut.stock];
+  return (r && r.isConnected) ? r.querySelector(sel) : null;
+}
+function maybeStartTutorial(p){
+  if(tut) return;
+  if(p==="pad"   && !S.tutPadDone)   setTimeout(()=>{ if(!tut && curPage==="pad")   tutStart("pad");   }, 400);
+  if(p==="board" && !S.tutBoardDone) setTimeout(()=>{ if(!tut && curPage==="board") tutStart("board"); }, 400);
+}
+function tutStart(kind){
+  tutInit();
+  tut={kind, steps:tutSteps(kind), idx:0, stock:(displayedIdx[0] ?? 0), raf:0, lastMsg:""};
+  window.scrollTo(0,0);
+  document.body.classList.add("tut-lock");
+  tutEls.layer.style.display="";
+  tutShowStep();
+  const loop=()=>{ if(!tut) return; tutLayout(); tut.raf=requestAnimationFrame(loop); };
+  loop();
+}
+function tutShowStep(){
+  const st=tut.steps[tut.idx];
+  let html=`<div class="tut-head">─ チュートリアル ${tut.idx+1}/${tut.steps.length} ─</div><div id="tutBody"></div>`;
+  if(st.done)         html+=`<button class="btn tut-ok" id="tutOk">${st.ok||"OK"}</button>`;
+  else if(st.observe) html+=`<button class="btn tut-ok" id="tutNext" disabled>次へ (${st.observe})</button><div class="tut-skip" id="tutSkip">チュートリアルを飛ばす »</div>`;
+  else                html+=`<div class="tut-skip" id="tutSkip">チュートリアルを飛ばす »</div>`;
+  tutEls.msg.innerHTML=html;
+  const ok=document.getElementById("tutOk");
+  if(ok) ok.onclick=()=>tutEnd();
+  const sk=document.getElementById("tutSkip");
+  if(sk) sk.onclick=()=>tutEnd();
+  // 観察ステップ:配当の受取額をライブ表示し、数秒眺めてから「次へ」を解放
+  clearInterval(tut.obsTimer);
+  const nx=document.getElementById("tutNext");
+  if(nx){
+    tut.divBase=S.lifetime;   // このステップ開始時点からの受取配当を計測
+    let rem=st.observe;
+    tut.obsTimer=setInterval(()=>{
+      if(!tut) return;
+      rem--;
+      if(rem>0) nx.textContent=`次へ (${rem})`;
+      else { nx.textContent="次へ"; nx.disabled=false; clearInterval(tut.obsTimer); }
+    }, 1000);
+    nx.onclick=()=>{ if(!nx.disabled) tutNextStep(); };
+  }
+  tut.lastMsg="";
+  tut.waitSince=0;   // 含み益待ちの経過計測をリセット
+  tutLayout();
+}
+function tutLayout(){
+  const st=tut.steps[tut.idx];
+  const [T,B,L,R]=tutEls.bk;
+  const waiting = !!(st.wait && !st.wait());
+  const txt = waiting ? st.msgWait : st.msg;
+  if(txt!==tut.lastMsg){ document.getElementById("tutBody").innerHTML=txt; tut.lastMsg=txt; }
+  if(st.observe){
+    const lv=document.getElementById("tutDivLive");
+    if(lv) lv.textContent=`このステップで受け取った配当 +${yen(Math.max(0, S.lifetime-tut.divBase))}`;
+  }
+  // 救済措置:含み損のまま3秒経っても含み益にならなければ、相場を少しだけ押し上げる
+  if(waiting){
+    if(!tut.waitSince) tut.waitSince=Date.now();
+    else if(Date.now()-tut.waitSince>3000){ tutForceProfit(); tut.waitSince=Date.now(); }
+  } else tut.waitSince=0;
+  if(st.done){
+    // 完了ステップ:全面を覆い、メッセージを中央に表示
+    T.style.cssText="left:0;top:0;right:0;bottom:0;";
+    B.style.cssText=L.style.cssText=R.style.cssText="display:none;";
+    tutEls.ring.style.display="none";
+    tutEls.hole.style.display="none";
+    Object.assign(tutEls.msg.style,{top:"50%",bottom:"",transform:"translateY(-50%)"});
+    return;
+  }
+  const el=st.target();
+  if(!el || !el.isConnected) return;   // 行の差し替え中などは前フレームの配置を維持
+  const rc=el.getBoundingClientRect(), pad=6;
+  const x1=Math.max(0,rc.left-pad),               y1=Math.max(0,rc.top-pad);
+  const x2=Math.min(window.innerWidth,rc.right+pad), y2=Math.min(window.innerHeight,rc.bottom+pad);
+  T.style.cssText=`left:0;top:0;right:0;height:${y1}px;`;
+  B.style.cssText=`left:0;top:${y2}px;right:0;bottom:0;`;
+  L.style.cssText=`left:0;top:${y1}px;width:${x1}px;height:${y2-y1}px;`;
+  R.style.cssText=`left:${x2}px;top:${y1}px;right:0;height:${y2-y1}px;`;
+  Object.assign(tutEls.ring.style,{display:"",left:x1+"px",top:y1+"px",width:(x2-x1)+"px",height:(y2-y1)+"px"});
+  tutEls.ring.classList.toggle("waiting", waiting);
+  // 待機中(含み損)と観察ステップは穴を透明ブロッカーで塞ぐ(誤タップ防止・観察はタップ不要)
+  if(waiting || st.observe) Object.assign(tutEls.hole.style,{display:"",left:x1+"px",top:y1+"px",width:(x2-x1)+"px",height:(y2-y1)+"px"});
+  else tutEls.hole.style.display="none";
+  // メッセージは穴と重ならない側(上/下)に配置
+  if(y1 > window.innerHeight*0.45) Object.assign(tutEls.msg.style,{top:"",bottom:(window.innerHeight-y1+12)+"px",transform:""});
+  else                             Object.assign(tutEls.msg.style,{top:(y2+12)+"px",bottom:"",transform:""});
+}
+// 救済措置:チュートリアルの含み益待ちが長引いたとき、相場を平均取得単価の少し上まで押し上げる。
+// デイトレは陽線ローソクを1本足してチャートに即反映、銘柄は倍率を直接引き上げてスパークラインにも記録する。
+// 押し上げ後も通常のランダムウォークは続くため、再び含み損に落ちれば3秒ごとに再発動する。
+function tutForceProfit(){
+  if(!tut) return;
+  if(tut.kind==="pad"){
+    if(S.zaraStock<1 || S.zaraAvg<=0) return;
+    const m=atLotMult()*padBuyDisc()*eyeBuyDiscM();
+    const target=(S.zaraAvg/m)*1.01;                     // 売却単価が平均取得の約+1%になる水準
+    if(nikkei>=target) return;
+    const o=nikkei;
+    nikkei=target;
+    padCandles.push({o, h:nikkei, l:o, c:nikkei});       // 上昇の陽線としてチャートに即描画
+    if(padCandles.length>PAD_CANDLE_MAX) padCandles.shift();
+    drawPad();
+    updatePadBtns();
+  } else {
+    const i=tut.stock;
+    if(S.owned[i]<1 || S.avgCost[i]<=0) return;
+    // 平均取得単価の+1.5%(高ボラ銘柄はボラ分)上へ。次tickの通常クランプで自然に戻るため上限は掛けない
+    const target=(S.avgCost[i]/STOCKS[i].base)*Math.max(1.015, 1+STOCKS[i].vol);
+    if(S.mult[i]>=target) return;
+    S.mult[i]=target;
+    S.hist[i].push(target);
+    if(S.hist[i].length>60) S.hist[i].shift();
+    renderBoard();
+  }
+}
+// 売買フックから呼ばれる進行判定(現在ステップの待ちアクションと一致したら次へ)
+function tutOnAction(tag){
+  if(!tut) return;
+  if(tut.steps[tut.idx].on!==tag) return;
+  tutNextStep();
+}
+function tutNextStep(){
+  tut.idx++;
+  if(tut.idx>=tut.steps.length){ tutEnd(); return; }
+  tutShowStep();
+}
+function tutEnd(){
+  if(!tut) return;
+  if(tut.kind==="pad") S.tutPadDone=true; else S.tutBoardDone=true;
+  cancelAnimationFrame(tut.raf);
+  clearInterval(tut.obsTimer);
+  tut=null;
+  tutEls.layer.style.display="none";
+  document.body.classList.remove("tut-lock");
+  autoSave();
+}
+
 /* ════════════════════════ セーブ ════════════════════════ */
 const SAVE_KEY="okuribito_save_v1";
 // hist(スパークライン履歴)はサイズが大きいので保存対象から除外し、毎秒保存を軽量化
@@ -3188,6 +3473,7 @@ document.addEventListener("contextmenu", e=>{
 /* ════════════════════════ メインループ ════════════════════════ */
 let assetTickN=0;
 const loaded=autoLoad();   // 自動セーブがあれば復元
+document.getElementById("verNow").textContent=GAME_VERSION;   // 履歴ページの現在バージョン表記はGAME_VERSION定数に追随
 layoutBoard(); buildUpgs(); buildEyeShop(); buildInagoShop(); buildAch(); renderAll(); renderClock(); fitBottomBar();
 // 初回プレイ時はHow to playを自動で開く
 if(S.firstPlay){ S.firstPlay=false; showHowto(); }
