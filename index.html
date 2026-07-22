@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <!-- GitHub Pagesのキャッシュ対策:常に再検証させ、古いバージョンの滞留を防ぐ -->
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
@@ -11,6 +11,8 @@
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root{
+    --sat:env(safe-area-inset-top, 0px);      /* ノッチ回避(上) */
+    --sab:env(safe-area-inset-bottom, 0px);   /* ホームバー回避(下) */
     --bg:#07090B;
     --panel:#0D1310;
     --line:#1C2721;
@@ -35,6 +37,7 @@
   /* ══ 常時表示トップバー ══ */
   #topbar{
     position:sticky; top:0; z-index:55;
+    padding-top:var(--sat);
     display:flex; align-items:baseline; gap:8px;
     border:1px solid var(--line); border-top:none; background:var(--panel);
     padding:7px 12px; margin-bottom:10px;
@@ -328,7 +331,9 @@
   #tutMsg .tut-ok{display:block; width:100%; margin-top:10px; padding:10px 0; font-size:14px;}
   #tutMsg .tut-skip{margin-top:8px; text-align:right; font-size:11px; color:var(--dim); text-decoration:underline; cursor:pointer;}
   #tutMsg .tut-live{display:inline-block; margin-top:4px; color:var(--up); font-family:var(--font-num); font-size:12px;}
-  body.tut-lock{overflow:hidden;}
+  /* チュートリアル中もスクロール自体は許可する(対象を可視域へ自動追従させるため)。
+     ユーザー操作は全面ブロッカー(touch-action:none)で抑止済み */
+  body.tut-lock{overscroll-behavior:none;}
 
   /* ══ バージョン履歴(転生ページ) ══ */
   .ver-list{padding:10px 12px; font-size:11px; line-height:1.7; color:var(--dim);}
@@ -514,7 +519,7 @@
   /* ══ 固定の下部バー(ページフッター＋ログ＋タブバー)══ */
   #bottomBar{
     position:fixed; bottom:0; left:0; right:0; max-width:760px; margin:0 auto;
-    padding:0; z-index:50; background:var(--bg);
+    padding:0 0 var(--sab); z-index:50; background:var(--bg);
     box-shadow:0 -8px 22px rgba(0,0,0,.65);
   }
 
@@ -720,8 +725,12 @@
   </section>
 
   <section>
-    <div class="sec-head"><span>■ バージョン履歴</span><span class="r">現在 <b id="verNow">v3.3.0</b></span></div>
+    <div class="sec-head"><span>■ バージョン履歴</span><span class="r">現在 <b id="verNow">v3.4.1</b></span></div>
     <div class="ver-list">
+      <div class="v-row"><span class="v-num">v3.4.1</span><span class="v-date">2026/07/18</span><br>
+        チュートリアルの不具合修正。URLバーが上にあるブラウザ(Safari等)で対象ボタンが画面外に隠れ、タップできず進行不能になる問題を解消。実際に見えている範囲を検出して対象へ自動スクロールするようになった。</div>
+      <div class="v-row"><span class="v-num">v3.4.0</span><span class="v-date">2026/07/17</span><br>
+        ネイティブアプリ(App Store / Google Play)対応の下準備。アプリ実行時はキャッシュ対策リロードとオンライン照合を自動スキップし、セーブをネイティブ領域(Capacitor Preferences)にも二重保存。ノッチ・ホームバーを避けるセーフエリア対応も追加(Web版の見た目は不変)。</div>
       <div class="v-row"><span class="v-num">v3.3.0</span><span class="v-date">2026/07/17</span><br>
         キャッシュ対策とバージョン自動更新を導入。起動時に前回プレイ時のバージョンと比較し、更新を検知したら ?v= 付きURLへ自動遷移してキャッシュを破棄・最新版を強制読み込み(セーブデータはそのまま引き継ぎ)。キャッシュ無効化のmetaタグも追加。さらに起動1.5秒後にサーバー上の現物ファイルとバージョンをオンライン照合し、公開直後の更新も即時検知して自動更新する。</div>
       <div class="v-row"><span class="v-num">v3.2.0</span><span class="v-date">2026/07/16</span><br>
@@ -819,9 +828,12 @@
 <script>
 "use strict";
 /* ════════════════════════ バージョン管理・キャッシュ対策 ════════════════════════ */
-const GAME_VERSION="v3.3.0";
+const GAME_VERSION="v3.4.1";
 const VER_KEY="okuribito_version";   // 前回プレイ時のバージョン(セーブデータとは別キー・セーブは一切触らない)
+// ネイティブアプリ(Capacitor)として実行中か。アプリはファイル同梱のためリロード式の更新機構は不要かつ有害
+const IS_NATIVE_APP = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 (function(){
+  if(IS_NATIVE_APP) return;   // アプリ版:キャッシュ対策リロードは行わない(更新はストア配信で行う)
   try{
     const last=localStorage.getItem(VER_KEY);
     if(last!==GAME_VERSION){
@@ -841,6 +853,7 @@ const VER_KEY="okuribito_version";   // 前回プレイ時のバージョン(セ
 // キャッシュ経由で配信された古いHTMLの中の定数では更新を自力検知できないため、
 // no-storeの実フェッチでサーバーの現物を見に行くのが唯一確実な検知手段。
 async function checkLatestVersion(){
+  if(IS_NATIVE_APP) return;                                                 // アプリ版はオンライン照合も不要
   if(location.protocol!=="http:" && location.protocol!=="https:") return;   // file://等ローカル実行はスキップ
   try{
     const res=await fetch(location.pathname, {cache:"no-store"});
@@ -3020,6 +3033,36 @@ function tutRowBtn(sel){
   const r=rowEls[tut.stock];
   return (r && r.isConnected) ? r.querySelector(sel) : null;
 }
+// URLバーやキーボードで上下から削られた「実際に見えている範囲」を返す。
+// visualViewport非対応環境ではウィンドウ全体にフォールバックする。
+// さらに画面下端は固定フッター(#bottomBar)が覆いかぶさるため、その分も操作可能域から除く。
+function tutViewBand(){
+  const vv=window.visualViewport;
+  const top = vv ? vv.offsetTop : 0;
+  const h   = vv ? vv.height    : window.innerHeight;
+  const bar = document.getElementById("bottomBar");
+  const barH= (bar && getComputedStyle(bar).position==="fixed") ? bar.offsetHeight : 0;
+  return {top, bottom:Math.max(top+1, top+h-barH), full:top+h};
+}
+// 対象が可視域からはみ出していたらスクロールして引き戻す。
+// 固定フッター内の要素はスクロールしても動かないので対象外。
+function tutEnsureVisible(el){
+  if(el.closest("#bottomBar")) return;
+  const b=tutViewBand(), m=12, rc=el.getBoundingClientRect();
+  if(b.bottom-b.top < rc.height+m*2) return;   // そもそも収まらない場合は無理に動かさない
+  let dy=0;
+  if(rc.bottom > b.bottom-m)   dy = rc.bottom-(b.bottom-m);
+  else if(rc.top < b.top+m)    dy = rc.top-(b.top+m);
+  if(Math.abs(dy) < 2) return;
+  const before=window.scrollY;
+  window.scrollBy(0, dy);
+  if(window.scrollY===before && dy>0){
+    // これ以上下へスクロールできない(ページ末尾)場合は、本文側に余白を足して届くようにする
+    const pb=parseFloat(document.body.style.paddingBottom)||0;
+    document.body.style.paddingBottom=(pb+dy+m)+"px";
+    window.scrollBy(0, dy);
+  }
+}
 function maybeStartTutorial(p){
   if(tut) return;
   if(p==="pad"   && !S.tutPadDone)   setTimeout(()=>{ if(!tut && curPage==="pad")   tutStart("pad");   }, 400);
@@ -3027,8 +3070,9 @@ function maybeStartTutorial(p){
 }
 function tutStart(kind){
   tutInit();
-  tut={kind, steps:tutSteps(kind), idx:0, stock:(displayedIdx[0] ?? 0), raf:0, lastMsg:""};
-  window.scrollTo(0,0);
+  tut={kind, steps:tutSteps(kind), idx:0, stock:(displayedIdx[0] ?? 0), raf:0, lastMsg:"", padAdd:document.body.style.paddingBottom};
+  // 以前はここで最上部へ固定していたが、URLバーが上にあるブラウザでは対象ボタンが
+  // 画面外(固定フッターの下)に隠れてタップできなくなるため、対象へ追従する方式に変更
   document.body.classList.add("tut-lock");
   tutEls.layer.style.display="";
   tutShowStep();
@@ -3085,14 +3129,19 @@ function tutLayout(){
     B.style.cssText=L.style.cssText=R.style.cssText="display:none;";
     tutEls.ring.style.display="none";
     tutEls.hole.style.display="none";
-    Object.assign(tutEls.msg.style,{top:"50%",bottom:"",transform:"translateY(-50%)"});
+    const bd=tutViewBand();
+    Object.assign(tutEls.msg.style,{top:(bd.top+(bd.full-bd.top)/2)+"px",bottom:"",transform:"translateY(-50%)"});
     return;
   }
   const el=st.target();
   if(!el || !el.isConnected) return;   // 行の差し替え中などは前フレームの配置を維持
+  tutEnsureVisible(el);                // URLバー等で隠れていたら可視域へ引き戻す
+  const band=tutViewBand();
   const rc=el.getBoundingClientRect(), pad=6;
-  const x1=Math.max(0,rc.left-pad),               y1=Math.max(0,rc.top-pad);
-  const x2=Math.min(window.innerWidth,rc.right+pad), y2=Math.min(window.innerHeight,rc.bottom+pad);
+  // 可視域でクランプ。上下が反転しないよう順序を保証する(反転すると穴が壊れてタップ不能になる)
+  const x1=Math.max(0, rc.left-pad), x2=Math.max(x1+1, Math.min(window.innerWidth, rc.right+pad));
+  const y1=Math.max(band.top, Math.min(band.full-1, rc.top-pad));
+  const y2=Math.max(y1+1,     Math.min(band.full,   rc.bottom+pad));
   T.style.cssText=`left:0;top:0;right:0;height:${y1}px;`;
   B.style.cssText=`left:0;top:${y2}px;right:0;bottom:0;`;
   L.style.cssText=`left:0;top:${y1}px;width:${x1}px;height:${y2-y1}px;`;
@@ -3102,9 +3151,15 @@ function tutLayout(){
   // 待機中(含み損)と観察ステップは穴を透明ブロッカーで塞ぐ(誤タップ防止・観察はタップ不要)
   if(waiting || st.observe) Object.assign(tutEls.hole.style,{display:"",left:x1+"px",top:y1+"px",width:(x2-x1)+"px",height:(y2-y1)+"px"});
   else tutEls.hole.style.display="none";
-  // メッセージは穴と重ならない側(上/下)に配置
-  if(y1 > window.innerHeight*0.45) Object.assign(tutEls.msg.style,{top:"",bottom:(window.innerHeight-y1+12)+"px",transform:""});
-  else                             Object.assign(tutEls.msg.style,{top:(y2+12)+"px",bottom:"",transform:""});
+  // メッセージは穴と重ならない側(上/下)へ、可視域の内側に収めて配置する
+  const mh=tutEls.msg.offsetHeight||0;
+  if(y1-band.top > band.full-y2){   // 穴の上側が広い→上に置く
+    const bottomPx=Math.min(window.innerHeight-band.top-mh-8, window.innerHeight-y1+12);
+    Object.assign(tutEls.msg.style,{top:"",bottom:Math.max(0,bottomPx)+"px",transform:""});
+  }else{                            // 穴の下側が広い→下に置く
+    const topPx=Math.min(band.full-mh-8, y2+12);
+    Object.assign(tutEls.msg.style,{top:Math.max(band.top+8,topPx)+"px",bottom:"",transform:""});
+  }
 }
 // 救済措置:チュートリアルの含み益待ちが長引いたとき、相場を平均取得単価の少し上まで押し上げる。
 // デイトレは陽線ローソクを1本足してチャートに即反映、銘柄は倍率を直接引き上げてスパークラインにも記録する。
@@ -3150,7 +3205,9 @@ function tutEnd(){
   if(tut.kind==="pad") S.tutPadDone=true; else S.tutBoardDone=true;
   cancelAnimationFrame(tut.raf);
   clearInterval(tut.obsTimer);
+  document.body.style.paddingBottom=tut.padAdd||"";   // 追従用に足した余白を戻す
   tut=null;
+  fitBottomBar();
   tutEls.layer.style.display="none";
   document.body.classList.remove("tut-lock");
   autoSave();
@@ -3169,9 +3226,33 @@ function applySave(d){
 function encodeSave(){ return btoa(unescape(encodeURIComponent(JSON.stringify(saveData())))); }
 function decodeSave(c){ return JSON.parse(decodeURIComponent(escape(atob(c.trim())))); }
 // 自動セーブ(localStorage)。プライベートモード等で失敗しても無視
-function autoSave(){
-  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(saveData())); }catch(e){}
+// アプリ版はCapacitor Preferences(ネイティブ領域)にも二重保存する。
+// WKWebView等ではOSがlocalStorageを稀に消すことがあるため、その保険。
+function nativePrefs(){
+  return (IS_NATIVE_APP && window.Capacitor.Plugins && window.Capacitor.Plugins.Preferences) || null;
 }
+function autoSave(){
+  const json=JSON.stringify(saveData());
+  try{ localStorage.setItem(SAVE_KEY, json); }catch(e){}
+  const p=nativePrefs();
+  if(p) p.set({key:SAVE_KEY, value:json}).catch(()=>{});   // 非同期・失敗は無視
+}
+// 起動時復旧:localStorageが空でPreferencesにバックアップがあれば書き戻して一度だけ再起動
+function tryRestoreFromNative(){
+  const p=nativePrefs();
+  if(!p) return;
+  try{ if(localStorage.getItem(SAVE_KEY)) return; }catch(e){ return; }
+  if(sessionStorage.getItem("okuribito_restored")) return;   // 復旧試行は1セッション1回(ループ防止)
+  p.get({key:SAVE_KEY}).then(r=>{
+    if(!r || !r.value) return;
+    try{
+      localStorage.setItem(SAVE_KEY, r.value);
+      sessionStorage.setItem("okuribito_restored","1");
+      location.reload();   // 復旧データで再初期化
+    }catch(e){}
+  }).catch(()=>{});
+}
+tryRestoreFromNative();
 // 起動時の自動ロード。成功したらtrue
 function autoLoad(){
   try{
